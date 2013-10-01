@@ -1,0 +1,298 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+  </style>
+  <link rel="stylesheet" href="../css/pmag.css" type="text/css" />
+</head>
+<body>
+<div id="header_wrap">
+   <h1><a href="https://www.facebook.com/groups/programmerMagazine">程式人雜誌</a> <sub> --  <a href="https://dl.dropbox.com/u/101584453/pmag/201309/htm/home.html">2013 年 10 月號</a> (開放公益出版品)</sub></h1>
+</div>
+<div id="content">
+<div id="TOC">
+<ul>
+<li><a href="#開放電腦計畫-4-cpu0mc-處理器使用-verilog-實作-作者陳鍾誠">開放電腦計畫 (4) – CPU0mc 處理器：使用 Verilog 實作 (作者：陳鍾誠)</a></li>
+</ul>
+</div>
+<h2 id="開放電腦計畫-4-cpu0mc-處理器使用-verilog-實作-作者陳鍾誠"><a href="#開放電腦計畫-4-cpu0mc-處理器使用-verilog-實作-作者陳鍾誠">開放電腦計畫 (4) – CPU0mc 處理器：使用 Verilog 實作 (作者：陳鍾誠)</a></h2>
+<p>從本期開始，我們將陸續介紹開放電腦計畫中的處理器，CPU0 的設計方式，我們將使用 Verilog 硬體描述語言來設計 CPU0 處理器。</p>
+<p>但是由於處理器的設計比較複雜，若採用一步到位的方式，恐怕讀者會難以理解。因此我們將採用循序漸進的方式，從 只支援 4 個指令的超微小處理器 CPU0-Mini 開始，來解說處理器的設計方式。</p>
+<p>在本文中，我們將用最簡單的方式，在完全不考慮成本與實用性的情況之下，設計一個將記憶體內建在 CPU0-Mini 內部 的處理器，稱為 CPU0mc，也就是 CPU0-Mini-Cache 的簡稱。</p>
+<h3 id="簡介"><a href="#簡介">簡介</a></h3>
+<p>還記得我們在 2013 年 6 月號的程式人雜誌中，刊載過的下列文章嗎？這篇文章說明了 CPU0 處理器的架構。</p>
+<ul>
+<li><a href="https://dl.dropboxusercontent.com/u/101584453/pmag/201306/htm/article5.html">開放電腦計畫 (1) – 整體架構與 CPU0 處理器</a></li>
+</ul>
+<p>在本文中，我們將從 CPU0 的指令集當中，挑出幾個指令，以便寫出一個可以計算 1+2+.....+n+.... 的組合語言程式 (喔！不、應該說是機器語言程式)，然後用 Verilog 實作一個可以執行這些指令的 CPU，這個微小的 CPU 版本稱為 CPU0mc。</p>
+<p>我們所挑的幾個指令如下：</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">格式</th>
+<th align="left">指令</th>
+<th align="left">OP</th>
+<th align="left">說明</th>
+<th align="left">語法</th>
+<th align="left">語意</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">L</td>
+<td align="left">LD</td>
+<td align="left">00</td>
+<td align="left">載入word</td>
+<td align="left">LD Ra, [Rb+Cx]</td>
+<td align="left">Ra=[Rb+Cx]</td>
+</tr>
+<tr class="even">
+<td align="left">L</td>
+<td align="left">ST</td>
+<td align="left">01</td>
+<td align="left">儲存word</td>
+<td align="left">ST Ra, [Rb+Cx]</td>
+<td align="left">Ra=[Rb+Cx]</td>
+</tr>
+<tr class="odd">
+<td align="left">A</td>
+<td align="left">ADD</td>
+<td align="left">13</td>
+<td align="left">加法</td>
+<td align="left">ADD Ra, Rb, Rc</td>
+<td align="left">Ra=Rb+Rc</td>
+</tr>
+<tr class="even">
+<td align="left">J</td>
+<td align="left">JMP</td>
+<td align="left">26</td>
+<td align="left">跳躍 (無條件)</td>
+<td align="left">JMP Cx</td>
+<td align="left">PC=PC+Cx</td>
+</tr>
+</tbody>
+</table>
+<p>然後，我們就可以用這幾個指令寫出以下的程式：</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">位址</th>
+<th align="left">機器碼</th>
+<th align="left">標記</th>
+<th align="left">組合語言</th>
+<th align="left">對照的 C 語言</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">0000</td>
+<td align="left">001F0018</td>
+<td align="left"></td>
+<td align="left">LD R1, K1</td>
+<td align="left">R1 = K1</td>
+</tr>
+<tr class="even">
+<td align="left">0004</td>
+<td align="left">002F0010</td>
+<td align="left"></td>
+<td align="left">LD R2, K0</td>
+<td align="left">R2 = K0</td>
+</tr>
+<tr class="odd">
+<td align="left">0008</td>
+<td align="left">003F0014</td>
+<td align="left"></td>
+<td align="left">LD R3, SUM</td>
+<td align="left">R3 = SUM</td>
+</tr>
+<tr class="even">
+<td align="left">000C</td>
+<td align="left">13221000</td>
+<td align="left">LOOP:</td>
+<td align="left">ADD R2, R2, R1</td>
+<td align="left">R2 = R2 + R1</td>
+</tr>
+<tr class="odd">
+<td align="left">0010</td>
+<td align="left">13332000</td>
+<td align="left"></td>
+<td align="left">ADD R3, R3, R2</td>
+<td align="left">R3 = R3 + R2</td>
+</tr>
+<tr class="even">
+<td align="left">0014</td>
+<td align="left">26FFFFF4</td>
+<td align="left"></td>
+<td align="left">JMP LOOP</td>
+<td align="left">goto LOOP</td>
+</tr>
+<tr class="odd">
+<td align="left">0018</td>
+<td align="left">00000000</td>
+<td align="left">K0:</td>
+<td align="left">WORD 0</td>
+<td align="left">int K0=0</td>
+</tr>
+<tr class="even">
+<td align="left">001C</td>
+<td align="left">00000001</td>
+<td align="left">K1:</td>
+<td align="left">WORD 1</td>
+<td align="left">int K1=1</td>
+</tr>
+<tr class="odd">
+<td align="left">0020</td>
+<td align="left">00000000</td>
+<td align="left">SUM:</td>
+<td align="left">WORD 0</td>
+<td align="left">int SUM=0</td>
+</tr>
+</tbody>
+</table>
+<p>這個程式的行為模式，是會讓暫存器 R3 (對應到 SUM) 從 0, 1, 1+2, 1+2+3, .... 一路向上跑，而且是永無止境的無窮迴圈。 因此我們會看到 R3 的內容會是 0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55 ... ，的情況。</p>
+<h3 id="cpu0mc-模組"><a href="#cpu0mc-模組">CPU0mc 模組</a></h3>
+<p>以下就是我們所設計的 CPU0mc 模組，以及測試的主程式，我們在程式中寫了詳細的說明，請讀者對照閱讀。</p>
+<p>檔案：<a href="https://dl.dropboxusercontent.com/u/101584453/pmag/201310/code/cpu0mc.v">CPU0mc</a></p>
+<pre class="sourceCode verilog"><code class="sourceCode verilog"><span class="ot">`define PC R[15] </span><span class="co">// 程式計數器 PC 其實是 R[15] 的別名</span>
+
+<span class="kw">module</span> cpu0mc(<span class="dt">input</span> clock); <span class="co">// CPU0-Mini 的快取版：cpu0mc 模組</span>
+  <span class="dt">parameter</span> [<span class="dv">7</span>:<span class="dv">0</span>] LD = <span class="bn">8&#39;h00</span>, ST=<span class="bn">8&#39;h01</span>, ADD=<span class="bn">8&#39;h13</span>, JMP=<span class="bn">8&#39;h26</span>; <span class="co">// 支援 4 個指令</span>
+  <span class="dt">reg</span> <span class="dt">signed</span> [<span class="dv">31</span>:<span class="dv">0</span>] R [<span class="dv">0</span>:<span class="dv">15</span>];   <span class="co">// 宣告暫存器 R[0..15] 等 16 個 32 位元暫存器</span>
+  <span class="dt">reg</span> <span class="dt">signed</span> [<span class="dv">31</span>:<span class="dv">0</span>] IR;         <span class="co">// 指令暫存器 IR</span>
+  <span class="dt">reg</span> [<span class="dv">7</span>:<span class="dv">0</span>] m [<span class="dv">0</span>:<span class="dv">128</span>];          <span class="co">// 內部的快取記憶體</span>
+  <span class="dt">reg</span> [<span class="dv">7</span>:<span class="dv">0</span>] op;                 <span class="co">// 變數：運算代碼 op</span>
+  <span class="dt">reg</span> [<span class="dv">3</span>:<span class="dv">0</span>] ra, rb, rc;         <span class="co">// 變數：暫存器代號 ra, rb, rc</span>
+  <span class="dt">reg</span> <span class="dt">signed</span> [<span class="dv">11</span>:<span class="dv">0</span>] cx12;       <span class="co">// 變數：12 位元常數 cx12</span>
+  <span class="dt">reg</span> <span class="dt">signed</span> [<span class="dv">15</span>:<span class="dv">0</span>] cx16;       <span class="co">// 變數：16 位元常數 cx16</span>
+  <span class="dt">reg</span> <span class="dt">signed</span> [<span class="dv">23</span>:<span class="dv">0</span>] cx24;       <span class="co">// 變數：24 位元常數 cx24</span>
+  <span class="dt">reg</span> <span class="dt">signed</span> [<span class="dv">31</span>:<span class="dv">0</span>] addr;       <span class="co">// 變數：暫存記憶體位址</span>
+
+  <span class="kw">initial</span>  <span class="co">// 初始化</span>
+  <span class="kw">begin</span>
+    <span class="ot">`PC</span> = <span class="dv">0</span>;                    <span class="co">// 將 PC 設為起動位址 0</span>
+    R[<span class="dv">0</span>] = <span class="dv">0</span>;                   <span class="co">// 將 R[0] 暫存器強制設定為 0</span>
+    {m[<span class="dv">0</span>],m[<span class="dv">1</span>],m[<span class="dv">2</span>],m[<span class="dv">3</span>]}    = <span class="bn">32&#39;h001F0018</span>; <span class="co">// 0000       LD   R1, K1</span>
+    {m[<span class="dv">4</span>],m[<span class="dv">5</span>],m[<span class="dv">6</span>],m[<span class="dv">7</span>]}    = <span class="bn">32&#39;h002F0010</span>; <span class="co">// 0004       LD   R2, K0</span>
+    {m[<span class="dv">8</span>],m[<span class="dv">9</span>],m[<span class="dv">10</span>],m[<span class="dv">11</span>]}  = <span class="bn">32&#39;h003F0014</span>; <span class="co">// 0008       LD   R3, SUM</span>
+    {m[<span class="dv">12</span>],m[<span class="dv">13</span>],m[<span class="dv">14</span>],m[<span class="dv">15</span>]}= <span class="bn">32&#39;h13221000</span>; <span class="co">// 000C LOOP: ADD  R2, R2, R1</span>
+    {m[<span class="dv">16</span>],m[<span class="dv">17</span>],m[<span class="dv">18</span>],m[<span class="dv">19</span>]}= <span class="bn">32&#39;h13332000</span>; <span class="co">// 0010       ADD  R3, R3, R2</span>
+    {m[<span class="dv">20</span>],m[<span class="dv">21</span>],m[<span class="dv">22</span>],m[<span class="dv">23</span>]}= <span class="bn">32&#39;h26FFFFF4</span>; <span class="co">// 0014       JMP  LOOP</span>
+    {m[<span class="dv">24</span>],m[<span class="dv">25</span>],m[<span class="dv">26</span>],m[<span class="dv">27</span>]}= <span class="bn">32&#39;h00000000</span>; <span class="co">// 0018 K0:   WORD 0</span>
+    {m[<span class="dv">28</span>],m[<span class="dv">29</span>],m[<span class="dv">30</span>],m[<span class="dv">31</span>]}= <span class="bn">32&#39;h00000001</span>; <span class="co">// 001C K1:   WORD 1</span>
+    {m[<span class="dv">32</span>],m[<span class="dv">33</span>],m[<span class="dv">34</span>],m[<span class="dv">35</span>]}= <span class="bn">32&#39;h00000000</span>; <span class="co">// 0020 SUM:  WORD 0</span>
+  <span class="kw">end</span>
+  
+  <span class="kw">always</span> @(<span class="kw">posedge</span> clock) <span class="kw">begin</span> <span class="co">// 在 clock 時脈的正邊緣時觸發</span>
+      IR = {m[<span class="ot">`PC</span>], m[<span class="ot">`PC</span><span class="dv">+1</span>], m[<span class="ot">`PC</span><span class="dv">+2</span>], m[<span class="ot">`PC</span><span class="dv">+3</span>]};  <span class="co">// 指令擷取階段：IR=m[PC], 4 個 Byte 的記憶體</span>
+      <span class="ot">`PC</span> = <span class="ot">`PC</span><span class="dv">+4</span>;                                  <span class="co">// 擷取完成，PC 前進到下一個指令位址</span>
+      {op,ra,rb,rc,cx12} = IR;                      <span class="co">// 解碼階段：將 IR 解為 {op, ra, rb, rc, cx12}</span>
+      cx24 = IR[<span class="dv">23</span>:<span class="dv">0</span>];                              <span class="co">//           解出 IR[23:0] 放入 cx24</span>
+      cx16 = IR[<span class="dv">15</span>:<span class="dv">0</span>];                              <span class="co">//           解出 IR[15:0] 放入 cx16</span>
+      addr = <span class="ot">`PC</span>+cx16;                              <span class="co">// 記憶體存取位址 = PC+cx16</span>
+      <span class="kw">case</span> (op) <span class="co">// 根據 OP 執行對應的動作</span>
+        <span class="dv">LD:</span> <span class="kw">begin</span>   <span class="co">// 載入指令： R[ra] = m[addr]</span>
+          R[ra] = {m[addr], m[addr<span class="dv">+1</span>], m[addr<span class="dv">+2</span>], m[addr<span class="dv">+3</span>]};
+          <span class="dt">$write</span>(<span class="st">&quot;%4dns %8x : LD  %x,%x,%-4x&quot;</span>, <span class="dt">$stime</span>, <span class="ot">`PC</span>, ra, rb, cx16);
+          <span class="kw">end</span>
+        <span class="dv">ST:</span> <span class="kw">begin</span>   <span class="co">// 儲存指令： m[addr] = R[ra]</span>
+          {m[addr], m[addr<span class="dv">+1</span>], m[addr<span class="dv">+2</span>], m[addr<span class="dv">+3</span>]} = R[ra];
+          <span class="dt">$write</span>(<span class="st">&quot;%4dns %8x : ST  %x,%x,%-4x&quot;</span>, <span class="dt">$stime</span>, <span class="ot">`PC</span>, ra, rb, cx16);
+          <span class="kw">end</span>
+        <span class="dv">ADD:</span> <span class="kw">begin</span>  <span class="co">// 加法指令： R[ra] = R[rb]+R[rc]</span>
+          R[ra] = R[rb]+R[rc];
+          <span class="dt">$write</span>(<span class="st">&quot;%4dns %8x : ADD %x,%x,%-4x&quot;</span>, <span class="dt">$stime</span>, <span class="ot">`PC</span>, ra, rb, rc);
+          <span class="kw">end</span>
+        <span class="dv">JMP:</span><span class="kw">begin</span>   <span class="co">// 跳躍指令： PC = PC + cx24</span>
+          addr = cx24; <span class="co">// 取出 cx 並轉為 32 位元有號數</span>
+          <span class="ot">`PC</span> = <span class="ot">`PC</span> + addr; <span class="co">// 跳躍目標位址=PC+cx</span>
+          <span class="dt">$write</span>(<span class="st">&quot;%4dns %8x : JMP %-8x&quot;</span>, <span class="dt">$stime</span>, <span class="ot">`PC</span>, cx24);
+          <span class="kw">end</span>
+      <span class="kw">endcase</span>
+      <span class="dt">$display</span>(<span class="st">&quot; R[%2d]=%4d&quot;</span>, ra, R[ra]); <span class="co">// 顯示目標暫存器的值</span>
+  <span class="kw">end</span>
+<span class="kw">endmodule</span>
+
+<span class="kw">module</span> main;                <span class="co">// 測試程式開始</span>
+<span class="dt">reg</span> clock;                  <span class="co">// 時脈 clock 變數</span>
+
+cpu0mc cpu(clock);          <span class="co">// 宣告 cpu0mc 處理器</span>
+
+<span class="kw">initial</span> clock = <span class="dv">0</span>;          <span class="co">// 一開始 clock 設定為 0</span>
+<span class="kw">always</span> <span class="bn">#10</span> clock=~clock;    <span class="co">// 每隔 10 奈秒將 clock 反相，產生週期為 20 奈秒的時脈</span>
+<span class="kw">initial</span> <span class="bn">#640</span> <span class="dt">$finish</span>;       <span class="co">// 在 640 奈秒的時候停止測試。(因為這時的 R[1] 恰好是 1+2+...+10=55 的結果)</span>
+<span class="kw">endmodule</span></code></pre>
+<h3 id="測試結果"><a href="#測試結果">測試結果</a></h3>
+<p>上述程式使用 icarus 測試與執行的結果如下所示。</p>
+<pre><code>
+D:\Dropbox\Public\web\oc\code&gt;iverilog -o cpu0mc cpu0mc.v
+
+D:\Dropbox\Public\web\oc\code&gt;vvp cpu0mc
+  10ns 00000004 : LD  1,f,0018 R[ 1]=   1
+  30ns 00000008 : LD  2,f,0010 R[ 2]=   0
+  50ns 0000000c : LD  3,f,0014 R[ 3]=   0
+  70ns 00000010 : ADD 2,2,1    R[ 2]=   1
+  90ns 00000014 : ADD 3,3,2    R[ 3]=   1
+ 110ns 0000000c : JMP fffff4   R[15]=  12
+ 130ns 00000010 : ADD 2,2,1    R[ 2]=   2
+ 150ns 00000014 : ADD 3,3,2    R[ 3]=   3
+ 170ns 0000000c : JMP fffff4   R[15]=  12
+ 190ns 00000010 : ADD 2,2,1    R[ 2]=   3
+ 210ns 00000014 : ADD 3,3,2    R[ 3]=   6
+ 230ns 0000000c : JMP fffff4   R[15]=  12
+ 250ns 00000010 : ADD 2,2,1    R[ 2]=   4
+ 270ns 00000014 : ADD 3,3,2    R[ 3]=  10
+ 290ns 0000000c : JMP fffff4   R[15]=  12
+ 310ns 00000010 : ADD 2,2,1    R[ 2]=   5
+ 330ns 00000014 : ADD 3,3,2    R[ 3]=  15
+ 350ns 0000000c : JMP fffff4   R[15]=  12
+ 370ns 00000010 : ADD 2,2,1    R[ 2]=   6
+ 390ns 00000014 : ADD 3,3,2    R[ 3]=  21
+ 410ns 0000000c : JMP fffff4   R[15]=  12
+ 430ns 00000010 : ADD 2,2,1    R[ 2]=   7
+ 450ns 00000014 : ADD 3,3,2    R[ 3]=  28
+ 470ns 0000000c : JMP fffff4   R[15]=  12
+ 490ns 00000010 : ADD 2,2,1    R[ 2]=   8
+ 510ns 00000014 : ADD 3,3,2    R[ 3]=  36
+ 530ns 0000000c : JMP fffff4   R[15]=  12
+ 550ns 00000010 : ADD 2,2,1    R[ 2]=   9
+ 570ns 00000014 : ADD 3,3,2    R[ 3]=  45
+ 590ns 0000000c : JMP fffff4   R[15]=  12
+ 610ns 00000010 : ADD 2,2,1    R[ 2]=  10
+ 630ns 00000014 : ADD 3,3,2    R[ 3]=  55</code></pre>
+<p>從上述輸出訊息當中，您可以看到程式的執行是正確的，其中 R[2] 從 0, 1, 2, ..... 一路上數， 而 R[3] 則從 0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55 一路累加上來，完成了我們想要的程式功能。</p>
+<h3 id="結語"><a href="#結語">結語</a></h3>
+<p>其實、CPU0mc 這樣的設計應該還不能稱之為快取，而是在程式不大的情況之下，將 SRAM 直接包入在 CPU 當中的一種作法， 這種作法的好處是記憶體存取速度很快，但相對的記憶體成本也很貴，因為這些記憶體是直接用靜態記憶體的方式內建在 CPU 當中的。</p>
+<p>這種方式比較像 SOC 系統單晶片的做法，在程式很小的情況之下，直接將記憶體包入 SOC 當中，會得到比較高速的電路， 可惜的是這種做法不像目前的電腦架構一樣，是採用外掛 DRAM 的方式，可以大幅降低記憶體的成本，增大記憶體的容量 就是了。</p>
+<h3 id="參考文獻"><a href="#參考文獻">參考文獻</a></h3>
+<ul>
+<li><a href="http://ccckmit.wikidot.com/ve:cpu0s">陳鍾誠的網站：使用 Verilog 設計 CPU0 處理器</a></li>
+<li><a href="http://ccckmit.wikidot.com/ve:cpu0m">陳鍾誠的網站：CPU0-Mini 處理器設計</a></li>
+</ul>
+</div>
+<div id="footer">
+<a href="https://www.facebook.com/groups/programmerMagazine/">程式人雜誌</a> ，採用 <a href="http://creativecommons.org/licenses/by-sa/3.0/tw/ ">創作共用：姓名標示、相同方式分享</a> 授權，歡迎加入 <a href="https://www.facebook.com/groups/programmerMagazine/">雜誌社團</a>
+</div>
+</body>
+</html>

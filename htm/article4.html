@@ -1,0 +1,266 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+  </style>
+  <link rel="stylesheet" href="../css/pmag.css" type="text/css" />
+</head>
+<body>
+<div id="header_wrap">
+   <h1><a href="https://www.facebook.com/groups/programmerMagazine">程式人雜誌</a> <sub> --  <a href="https://dl.dropbox.com/u/101584453/pmag/201309/htm/home.html">2013 年 10 月號</a> (開放公益出版品)</sub></h1>
+</div>
+<div id="content">
+<div id="TOC">
+<ul>
+<li><a href="#verilog-4-算術邏輯單元-alu-的設計-作者陳鍾誠">Verilog (4) – 算術邏輯單元 ALU 的設計 (作者：陳鍾誠)</a></li>
+</ul>
+</div>
+<h2 id="verilog-4-算術邏輯單元-alu-的設計-作者陳鍾誠"><a href="#verilog-4-算術邏輯單元-alu-的設計-作者陳鍾誠">Verilog (4) – 算術邏輯單元 ALU 的設計 (作者：陳鍾誠)</a></h2>
+<p>在上一期的文章中，我們探討了「組合邏輯電路」的設計方式，採用閘級的拉線方式設計了「多工器」與「加法器」等元件， 在這一期當中，我們將從加法器再度往上，探討如何設計一個 ALU 單元。</p>
+<h3 id="採用-case-語法設計-alu"><a href="#採用-case-語法設計-alu">採用 CASE 語法設計 ALU</a></h3>
+<p>其實、在 Verilog 當中，我們並不需要自行設計加法器，因為 Verilog 提供了高階的 「+, -, *, /」等基本運算，可以讓我們 直接使用，更方便的是，只要搭配 case 語句，我們就可以很輕易的設計出一個 ALU 單元了。</p>
+<p>以下是一個簡易的 ALU 單元之程式碼，</p>
+<pre class="sourceCode verilog"><code class="sourceCode verilog"><span class="co">// 輸入 a, b 後會執行 op 所指定的運算，然後將結果放在暫存器 y 當中</span>
+<span class="kw">module</span> alu(<span class="dt">input</span> [<span class="dv">7</span>:<span class="dv">0</span>] a, <span class="dt">input</span> [<span class="dv">7</span>:<span class="dv">0</span>] b, <span class="dt">input</span> [<span class="dv">2</span>:<span class="dv">0</span>] op, <span class="dt">output</span> <span class="dt">reg</span> [<span class="dv">7</span>:<span class="dv">0</span>] y);
+always@(a <span class="dt">or</span> b <span class="dt">or</span> op) <span class="kw">begin</span> <span class="co">// 當 a, b 或 op 有改變時，就進入此區塊執行。</span>
+  <span class="kw">case</span>(op)                  <span class="co">// 根據 op 決定要執行何種運算</span>
+    <span class="bn">3&#39;b000</span>: y = a + b;      <span class="co">// op=000, 執行加法</span>
+    <span class="bn">3&#39;b001</span>: y = a - b;      <span class="co">// op=000, 執行減法</span>
+    <span class="bn">3&#39;b010</span>: y = a * b;      <span class="co">// op=000, 執行乘法</span>
+    <span class="bn">3&#39;b011</span>: y = a / b;      <span class="co">// op=000, 執行除法</span>
+    <span class="bn">3&#39;b100</span>: y = a &amp; b;      <span class="co">// op=000, 執行 AND</span>
+    <span class="bn">3&#39;b101</span>: y = a | b;      <span class="co">// op=000, 執行 OR</span>
+    <span class="bn">3&#39;b110</span>: y = ~a;         <span class="co">// op=000, 執行 NOT</span>
+    <span class="bn">3&#39;b111</span>: y = a ^ b;      <span class="co">// op=000, 執行 XOR</span>
+  <span class="kw">endcase</span>
+<span class="kw">end</span>
+<span class="kw">endmodule</span></code></pre>
+<h3 id="verilog-語法的注意事項"><a href="#verilog-語法的注意事項">Verilog 語法的注意事項</a></h3>
+<p>上述這種寫法感覺就好像在用高階寫程式一樣，這讓 ALU 的設計變得非常簡單。但是仍然需要注意以下幾點與高階語言不同之處：</p>
+<h4 id="注意事項-1.-always-語句的用法"><a href="#注意事項-1.-always-語句的用法">注意事項 1. always 語句的用法</a></h4>
+<p>case 等陳述句的外面一定要有 always 或 initial 語句，因為這是硬體線路，所以是採用連線 wiring 的方式，always 語句 只有在 @(trigger) 中間的 trigger 觸發條件符合時才會被觸發。</p>
+<p>當 trigger 中的變數有任何改變的時候，always 語句就會被觸發，像是 always@(a or b or op) 就代表當 (a, b, op) 當中任何一個 有改變的時候，該語句就會被觸發。</p>
+<p>有時我們可以在 always 語句當中加上 posedge 的條件，指定只有在「正邊緣」(上昇邊緣) 時觸發。或者加上 negedge 的條件，指定 只有在「負邊緣」(下降邊緣) 的時候觸發，例如我們可以常常在 Verilog 當中看到下列語句：</p>
+<pre class="sourceCode verilog"><code class="sourceCode verilog"><span class="kw">always</span> @(<span class="kw">posedge</span> clock) <span class="kw">begin</span>
+....
+<span class="kw">end</span></code></pre>
+<p>上述語句就只有在 clock 這一條線路的電波上昇邊緣會被觸發，如此我們就能更精細的控制觸發的動作，採用正邊緣或負邊緣觸發的方式。</p>
+<h4 id="注意事項-2.-指定陳述的左項之限制"><a href="#注意事項-2.-指定陳述的左項之限制">注意事項 2. 指定陳述的左項之限制</a></h4>
+<p>在上述程式中，a, b, op 被宣告為 input (輸入線路), 而 y 則宣告為 output reg (輸出暫存器), 在這裏必須注意的是 y 不能只宣告為 output 而不加上 reg，因為只有 reg 型態的變數才能被放在 always 區塊裡的等號左方，進行指定的動作。</p>
+<p>事實上、在 Verilog 當中，像 <code>output reg [7:0] y</code> 這樣的宣告，其實也可以用比較繁雜的兩次宣告方式，一次宣告 output， 另一次則宣告 reg，如下所示：</p>
+<pre class="sourceCode verilog"><code class="sourceCode verilog"><span class="kw">module</span> alu(<span class="dt">input</span> [<span class="dv">7</span>:<span class="dv">0</span>] a, <span class="dt">input</span> [<span class="dv">7</span>:<span class="dv">0</span>] b, <span class="dt">input</span> [<span class="dv">2</span>:<span class="dv">0</span>] op, <span class="dt">output</span> [<span class="dv">7</span>:<span class="dv">0</span>] y);
+<span class="dt">reg</span> y;
+always@(a <span class="dt">or</span> b <span class="dt">or</span> op) <span class="kw">begin</span>
+....</code></pre>
+<p>甚至，您也可以將該變數分開為兩個不同名稱，然後再利用 assign 的方式指定，如下所示：</p>
+<pre class="sourceCode verilog"><code class="sourceCode verilog"><span class="co">// 輸入 a, b 後會執行 op 所指定的運算，然後將結果放在暫存器 y 當中</span>
+<span class="kw">module</span> alu(<span class="dt">input</span> [<span class="dv">7</span>:<span class="dv">0</span>] a, <span class="dt">input</span> [<span class="dv">7</span>:<span class="dv">0</span>] b, <span class="dt">input</span> [<span class="dv">2</span>:<span class="dv">0</span>] op, <span class="dt">output</span> [<span class="dv">7</span>:<span class="dv">0</span>] y);
+<span class="dt">reg</span> ty;
+always@(a <span class="dt">or</span> b <span class="dt">or</span> op) <span class="kw">begin</span> <span class="co">// 當 a, b 或 op 有改變時，就進入此區塊執行。</span>
+  <span class="kw">case</span>(op)                  <span class="co">// 根據 op 決定要執行何種運算</span>
+    <span class="bn">3&#39;b000</span>: ty = a + b;      <span class="co">// op=000, 執行加法</span>
+    <span class="bn">3&#39;b001</span>: ty = a - b;      <span class="co">// op=000, 執行減法</span>
+    <span class="bn">3&#39;b010</span>: ty = a * b;      <span class="co">// op=000, 執行乘法</span>
+    <span class="bn">3&#39;b011</span>: ty = a / b;      <span class="co">// op=000, 執行除法</span>
+    <span class="bn">3&#39;b100</span>: ty = a &amp; b;      <span class="co">// op=000, 執行 AND</span>
+    <span class="bn">3&#39;b101</span>: ty = a | b;      <span class="co">// op=000, 執行 OR</span>
+    <span class="bn">3&#39;b110</span>: ty = ~a;         <span class="co">// op=000, 執行 NOT</span>
+    <span class="bn">3&#39;b111</span>: ty = a ^ b;      <span class="co">// op=000, 執行 XOR</span>
+  <span class="kw">endcase</span>
+  <span class="dt">$display</span>(<span class="st">&quot;base 10 : %dns : op=%d a=%d b=%d y=%d&quot;</span>, <span class="dt">$stime</span>, op, a, b, y); <span class="co">// 印出 op, a, b, y 的 10 進位值。</span>
+  <span class="dt">$display</span>(<span class="st">&quot;base  2 : %dns : op=%b a=%b b=%b y=%b&quot;</span>, <span class="dt">$stime</span>, op, a, b, y); <span class="co">// 印出 op, a, b, y 的  2 進位值。</span>
+<span class="kw">end</span>
+<span class="kw">assign</span> y=ty;
+<span class="kw">endmodule</span></code></pre>
+<p>在上述程式中，由於只有 reg 型態的變數可以放在 always 區塊內的等號左邊，因此我們必須用 reg 型態的 ty 去儲存 運算結果。</p>
+<p>但是在 assign 指令的等號左邊，則不需要是暫存器型態的變數，也可以是線路型態的變數，因此我們可以用 assign y=ty 這樣一個指令去將 ty 的暫存器內容輸出。</p>
+<p>事實上，assign 語句代表的是一種「不需儲存的立即輸出接線」，因此我們才能將 output 型態的變數寫在等號左邊啊！</p>
+<h3 id="完整的-alu-設計-含測試程式"><a href="#完整的-alu-設計-含測試程式">完整的 ALU 設計 (含測試程式)</a></h3>
+<p>瞭解了這些 Verilog 語法特性之後，我們就可以搭配測試程式，對這個　ALU 模組進行測試，以下是完整的程式碼：</p>
+<p>檔案：<a href="../code/alu.v">alu.v</a></p>
+<pre class="sourceCode verilog"><code class="sourceCode verilog"><span class="co">// 輸入 a, b 後會執行 op 所指定的運算，然後將結果放在暫存器 y 當中</span>
+<span class="kw">module</span> alu(<span class="dt">input</span> [<span class="dv">7</span>:<span class="dv">0</span>] a, <span class="dt">input</span> [<span class="dv">7</span>:<span class="dv">0</span>] b, <span class="dt">input</span> [<span class="dv">2</span>:<span class="dv">0</span>] op, <span class="dt">output</span> <span class="dt">reg</span> [<span class="dv">7</span>:<span class="dv">0</span>] y);
+always@(a <span class="dt">or</span> b <span class="dt">or</span> op) <span class="kw">begin</span> <span class="co">// 當 a, b 或 op 有改變時，就進入此區塊執行。</span>
+  <span class="kw">case</span>(op)                  <span class="co">// 根據 op 決定要執行何種運算</span>
+    <span class="bn">3&#39;b000</span>: y = a + b;      <span class="co">// op=000, 執行加法</span>
+    <span class="bn">3&#39;b001</span>: y = a - b;      <span class="co">// op=000, 執行減法</span>
+    <span class="bn">3&#39;b010</span>: y = a * b;      <span class="co">// op=000, 執行乘法</span>
+    <span class="bn">3&#39;b011</span>: y = a / b;      <span class="co">// op=000, 執行除法</span>
+    <span class="bn">3&#39;b100</span>: y = a &amp; b;      <span class="co">// op=000, 執行 AND</span>
+    <span class="bn">3&#39;b101</span>: y = a | b;      <span class="co">// op=000, 執行 OR</span>
+    <span class="bn">3&#39;b110</span>: y = ~a;         <span class="co">// op=000, 執行 NOT</span>
+    <span class="bn">3&#39;b111</span>: y = a ^ b;      <span class="co">// op=000, 執行 XOR</span>
+  <span class="kw">endcase</span>
+  <span class="dt">$display</span>(<span class="st">&quot;base 10 : %dns : op=%d a=%d b=%d y=%d&quot;</span>, <span class="dt">$stime</span>, op, a, b, y); <span class="co">// 印出 op, a, b, y 的 10 進位值。</span>
+  <span class="dt">$display</span>(<span class="st">&quot;base  2 : %dns : op=%b a=%b b=%b y=%b&quot;</span>, <span class="dt">$stime</span>, op, a, b, y); <span class="co">// 印出 op, a, b, y 的  2 進位值。</span>
+<span class="kw">end</span>
+<span class="kw">endmodule</span>
+
+<span class="kw">module</span> main;                <span class="co">// 測試程式開始</span>
+ <span class="dt">reg</span>  [<span class="dv">7</span>:<span class="dv">0</span>] a, b;           <span class="co">// 宣告 a, b 為 8 位元暫存器</span>
+ <span class="dt">wire</span>  [<span class="dv">7</span>:<span class="dv">0</span>] y;             <span class="co">// 宣告 y 為 8 位元線路</span>
+ <span class="dt">reg</span>  [<span class="dv">2</span>:<span class="dv">0</span>] op;             <span class="co">// 宣告 op 為 3 位元暫存器</span>
+
+ alu alu1(a, b, op, y);     <span class="co">// 建立一個 alu 單元，名稱為 alu1</span>
+
+ <span class="kw">initial</span> <span class="kw">begin</span>              <span class="co">// 測試程式的初始化動作</span>
+  a = <span class="bn">8&#39;h07</span>;                <span class="co">// 設定 a 為數值 7</span>
+  b = <span class="bn">8&#39;h03</span>;                <span class="co">// 設定 b 為數值 3</span>
+  op = <span class="bn">3&#39;b000</span>;              <span class="co">// 設定 op 的初始值為 000</span>
+ <span class="kw">end</span>
+
+ <span class="kw">always</span> <span class="bn">#50</span> <span class="kw">begin</span>           <span class="co">// 每個 50 奈秒就作下列動作</span>
+   op = op + <span class="dv">1</span>;             <span class="co">// 讓 op 的值加 1</span>
+ <span class="kw">end</span>
+
+<span class="kw">initial</span> <span class="bn">#1000</span> <span class="dt">$finish</span>;      <span class="co">// 時間到 1000 奈秒就結束</span>
+
+<span class="kw">endmodule</span></code></pre>
+<p>在上述程式中，為了更清楚的印出 ALU 的輸出結果，我們在 ALU 模組的結尾放入以下的兩行 <code>$display()</code> 指令， 以便同時顯示 (op, a, b, y) 等變數的 10 進位與 2 進位結果值，方便讀者觀察。</p>
+<pre class="sourceCode verilog"><code class="sourceCode verilog">  <span class="dt">$display</span>(<span class="st">&quot;base 10 : %dns : op=%d a=%d b=%d y=%d&quot;</span>, <span class="dt">$stime</span>, op, a, b, y); <span class="co">// 印出 op, a, b, y 的 10 進位值。</span>
+  <span class="dt">$display</span>(<span class="st">&quot;base  2 : %dns : op=%b a=%b b=%b y=%b&quot;</span>, <span class="dt">$stime</span>, op, a, b, y); <span class="co">// 印出 op, a, b, y 的  2 進位值。</span></code></pre>
+<h3 id="測試執行結果"><a href="#測試執行結果">測試執行結果</a></h3>
+<p>上述程式的執行測試結果如下：</p>
+<pre><code>D:\Dropbox\Public\pmag\201310\code&gt;iverilog -o alu alu.v
+
+D:\Dropbox\Public\pmag\201310\code&gt;vvp alu
+base 10 :          0ns : op=0 a=  7 b=  3 y= 10
+base  2 :          0ns : op=000 a=00000111 b=00000011 y=00001010
+base 10 :         50ns : op=1 a=  7 b=  3 y=  4
+base  2 :         50ns : op=001 a=00000111 b=00000011 y=00000100
+base 10 :        100ns : op=2 a=  7 b=  3 y= 21
+base  2 :        100ns : op=010 a=00000111 b=00000011 y=00010101
+base 10 :        150ns : op=3 a=  7 b=  3 y=  2
+base  2 :        150ns : op=011 a=00000111 b=00000011 y=00000010
+base 10 :        200ns : op=4 a=  7 b=  3 y=  3
+base  2 :        200ns : op=100 a=00000111 b=00000011 y=00000011
+base 10 :        250ns : op=5 a=  7 b=  3 y=  7
+base  2 :        250ns : op=101 a=00000111 b=00000011 y=00000111
+base 10 :        300ns : op=6 a=  7 b=  3 y=248
+base  2 :        300ns : op=110 a=00000111 b=00000011 y=11111000
+base 10 :        350ns : op=7 a=  7 b=  3 y=  4
+base  2 :        350ns : op=111 a=00000111 b=00000011 y=00000100
+base 10 :        400ns : op=0 a=  7 b=  3 y= 10
+base  2 :        400ns : op=000 a=00000111 b=00000011 y=00001010
+base 10 :        450ns : op=1 a=  7 b=  3 y=  4
+base  2 :        450ns : op=001 a=00000111 b=00000011 y=00000100
+base 10 :        500ns : op=2 a=  7 b=  3 y= 21
+base  2 :        500ns : op=010 a=00000111 b=00000011 y=00010101
+base 10 :        550ns : op=3 a=  7 b=  3 y=  2
+base  2 :        550ns : op=011 a=00000111 b=00000011 y=00000010
+base 10 :        600ns : op=4 a=  7 b=  3 y=  3
+base  2 :        600ns : op=100 a=00000111 b=00000011 y=00000011
+base 10 :        650ns : op=5 a=  7 b=  3 y=  7
+base  2 :        650ns : op=101 a=00000111 b=00000011 y=00000111
+base 10 :        700ns : op=6 a=  7 b=  3 y=248
+base  2 :        700ns : op=110 a=00000111 b=00000011 y=11111000
+base 10 :        750ns : op=7 a=  7 b=  3 y=  4
+base  2 :        750ns : op=111 a=00000111 b=00000011 y=00000100
+base 10 :        800ns : op=0 a=  7 b=  3 y= 10
+base  2 :        800ns : op=000 a=00000111 b=00000011 y=00001010
+base 10 :        850ns : op=1 a=  7 b=  3 y=  4
+base  2 :        850ns : op=001 a=00000111 b=00000011 y=00000100
+base 10 :        900ns : op=2 a=  7 b=  3 y= 21
+base  2 :        900ns : op=010 a=00000111 b=00000011 y=00010101
+base 10 :        950ns : op=3 a=  7 b=  3 y=  2
+base  2 :        950ns : op=011 a=00000111 b=00000011 y=00000010
+base 10 :       1000ns : op=4 a=  7 b=  3 y=  3</code></pre>
+<h3 id="執行結果分析"><a href="#執行結果分析">執行結果分析</a></h3>
+<p>您可以看到一開始 0ns 時，op=0，所以執行加法，得到 y=a+b=7+3=10，然後 50ns 時 op=1，所以執行減法， 以下是整個執行結果的簡化列表：</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">a</th>
+<th align="left">b</th>
+<th align="left">op</th>
+<th align="left">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">7</td>
+<td align="left">3</td>
+<td align="left">0 (+)</td>
+<td align="left">10</td>
+</tr>
+<tr class="even">
+<td align="left">7</td>
+<td align="left">3</td>
+<td align="left">1 (-)</td>
+<td align="left">4</td>
+</tr>
+<tr class="odd">
+<td align="left">7</td>
+<td align="left">3</td>
+<td align="left">2 (*)</td>
+<td align="left">21</td>
+</tr>
+<tr class="even">
+<td align="left">7</td>
+<td align="left">3</td>
+<td align="left">3 (/)</td>
+<td align="left">2</td>
+</tr>
+<tr class="odd">
+<td align="left">00000111</td>
+<td align="left">00000011</td>
+<td align="left">4 (AND)</td>
+<td align="left">00000011</td>
+</tr>
+<tr class="even">
+<td align="left">00000111</td>
+<td align="left">00000011</td>
+<td align="left">5 (OR)</td>
+<td align="left">00000111</td>
+</tr>
+<tr class="odd">
+<td align="left">00000111</td>
+<td align="left">00000011</td>
+<td align="left">6 (NOT)</td>
+<td align="left">11111000</td>
+</tr>
+<tr class="even">
+<td align="left">00000111</td>
+<td align="left">00000011</td>
+<td align="left">6 (XOR)</td>
+<td align="left">00000100</td>
+</tr>
+</tbody>
+</table>
+<p>透過上述的測試，我們知道整個 ALU 的設計方式是正確的。</p>
+<h3 id="結語"><a href="#結語">結語</a></h3>
+<p>對於沒有學過「硬體描述語言」的人來說，通常會認為要設計一個 ALU 單元，應該是很複雜的。但是從上述的程式當中，您可以看到 在 Verilog 當中設計 ALU 其實是很簡單的，只要用 10 行左右的程式碼，甚至不需要自己設計「加法器」就能完成。</p>
+<p>這是因為 Verilog 將 <code>「+, -, *, /」</code> 等運算內建在語言當中了，所以讓整個程式的撰寫只要透過一個 case 語句就能做完了， 這種設計方式非常的像「高階語言」，讓硬體的設計變得更加的容易了。</p>
+<p>事實上，在使用 Verilog 設計像 CPU 這樣的複雜元件時，ALU 或暫存器等單元都變得非常的容易。真正複雜的其實是控制單元， 而這也是 CPU 設計的精髓之所在，我們會在「開放電腦計劃」系列的文章中，完成 CPU 與控制單元的設計。</p>
+<h3 id="參考文獻"><a href="#參考文獻">參考文獻</a></h3>
+<ul>
+<li><a href="http://ccckmit.wikidot.com/ve:alu">陳鍾誠的網站：用 Verilog 設計 ALU</a></li>
+</ul>
+</div>
+<div id="footer">
+<a href="https://www.facebook.com/groups/programmerMagazine/">程式人雜誌</a> ，採用 <a href="http://creativecommons.org/licenses/by-sa/3.0/tw/ ">創作共用：姓名標示、相同方式分享</a> 授權，歡迎加入 <a href="https://www.facebook.com/groups/programmerMagazine/">雜誌社團</a>
+</div>
+</body>
+</html>

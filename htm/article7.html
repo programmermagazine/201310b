@@ -1,0 +1,194 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+  </style>
+  <link rel="stylesheet" href="../css/pmag.css" type="text/css" />
+</head>
+<body>
+<div id="header_wrap">
+   <h1><a href="https://www.facebook.com/groups/programmerMagazine">程式人雜誌</a> <sub> --  <a href="https://dl.dropbox.com/u/101584453/pmag/201309/htm/home.html">2013 年 10 月號</a> (開放公益出版品)</sub></h1>
+</div>
+<div id="content">
+<div id="TOC">
+<ul>
+<li><a href="#arduino-專題分享-利用藍牙模組達到兩台-arduino-互相通訊-作者許肇驛">Arduino 專題分享 – 利用藍牙模組達到兩台 arduino 互相通訊 (作者：許肇驛)</a></li>
+</ul>
+</div>
+<h2 id="arduino-專題分享-利用藍牙模組達到兩台-arduino-互相通訊-作者許肇驛"><a href="#arduino-專題分享-利用藍牙模組達到兩台-arduino-互相通訊-作者許肇驛">Arduino 專題分享 – 利用藍牙模組達到兩台 arduino 互相通訊 (作者：許肇驛)</a></h2>
+<p>我所實驗用的藍牙模組為 P-BSMi Silver 藍牙模組</p>
+<div class="figure">
+<img src="../img/ArudinoBluetooth_Module.jpg" />
+</div>
+<p>我所使用的板子為 Arduino MEGA 2560</p>
+<div class="figure">
+<img src="../img/ArduinoBluetooth_mega2560.jpg" />
+</div>
+<div class="figure">
+<img src="../img/ArduinoBluetooth_Circuit.gif" alt="圖、ARDUINO 官方提供的藍牙接線圖" /><p class="caption">圖、ARDUINO 官方提供的藍牙接線圖</p>
+</div>
+<p>照著官方提供之藍牙接線圖，接完後</p>
+<p>我們開始設定兩塊 arduino 端的程式，藍牙通訊的關係為 Master - Slave，選定一塊arudnio版作為我們的master端，並編寫程式</p>
+<h3 id="程式流程說明"><a href="#程式流程說明">程式流程說明</a></h3>
+<p>我們的master端 會尋找指定的配對對象，當配對成功後, slave 端會先傳送 'y' 字元 給 master 端，當 master 端收到後作為確認後， 進入 autosend() 副程式，開始傳送'a' 's' 'd' 三個字元給slave端的藍牙，當slave端收到後 會依照收到的順序做不一樣的 led 明滅方式。</p>
+<ul>
+<li>'a' 做五次明滅</li>
+<li>'s' LED恆亮</li>
+<li>'d' LED恆滅</li>
+</ul>
+<pre class="sourceCode CPP"><code class="sourceCode cpp"><span class="co">//Master code</span>
+<span class="co">/************</span>
+<span class="co">Created 2012</span>
+<span class="co">by 許肇驛 Hsu Chao-YI</span>
+<span class="co">E-mail: ps2steve2005@hotmail.com </span>
+<span class="co">This code is use for communication between BT and BT with each arduino board</span>
+<span class="co">***********/</span>
+<span class="dt">char</span> cometemp;
+<span class="dt">void</span> setup() {
+  Serial3.begin(<span class="dv">9600</span>);
+  Serial3.print(<span class="st">&quot;$$$&quot;</span>);
+  delay(<span class="dv">100</span>);
+  Serial3.println(<span class="st">&quot;SM,1&quot;</span>);  
+  delay(<span class="dv">100</span>);
+  Serial3.println(<span class="st">&quot;C,00066648548F&quot;</span>);
+  delay(<span class="dv">100</span>);
+  Serial3.println(<span class="st">&quot;---&quot;</span>);
+}
+<span class="dt">void</span> loop(){
+  <span class="kw">if</span>(Serial3.available())
+{
+  cometemp = Serial3.read();
+  <span class="kw">if</span> (cometemp =&#39;y&#39;){
+    autosend();
+}
+<span class="kw">else</span> {
+ Serial.print(<span class="st">&quot;Can&#39;t no find the bluetooth device.&quot;</span>);
+ Serial.print(<span class="st">&quot;Try again after 5 seconds..&quot;</span>);
+ delay(<span class="dv">5000</span>);
+ Serial3.print(<span class="st">&quot;$$$&quot;</span>);
+  delay(<span class="dv">100</span>);
+  Serial3.println(<span class="st">&quot;SM,1&quot;</span>);  
+  delay(<span class="dv">100</span>);
+  Serial3.println(<span class="st">&quot;C,00066648548F&quot;</span>);
+  delay(<span class="dv">100</span>);
+  Serial3.println(<span class="st">&quot;---&quot;</span>);
+}
+}
+}
+<span class="dt">void</span> autosend(){
+Serial3.print(&#39;a&#39;);
+Serial.print(<span class="st">&quot;Sent a. &quot;</span>);
+delay(<span class="dv">300</span>);
+Serial3.print(&#39;s&#39;);
+Serial.print(<span class="st">&quot;Sent s. &quot;</span>);
+delay(<span class="dv">300</span>);
+Serial3.print(&#39;d&#39;);
+Serial.print(<span class="st">&quot;Sent d&quot;</span>);
+delay(<span class="dv">300</span>);
+}</code></pre>
+<p>程式註解:</p>
+<ul>
+<li>Serial.available() - serial 收到訊息</li>
+<li><img style="vertical-align:middle" src="http://chart.apis.google.com/chart?cht=tx&amp;chl=%24" alt="$" title="$" /> - 依照 RN42 官方指令說明書 為進入命令模式</li>
+<li>SM, <code>&lt;5,4,3,2,1,0&gt;</code> -設定此藍牙模組的模式
+<ul>
+<li>(0=slave, 1=master,2=trigger, 3=auto, 4=DTR, 5=ANY)</li>
+<li>Example : “SM,1” 設定藍牙模組為master端<br /></li>
+</ul></li>
+<li>C, <code>&lt;address&gt;</code> -設定要指定去配對的藍牙模組, address 為另外一端的mac位址
+<ul>
+<li>--- -離開命令模式 exit command mode</li>
+</ul></li>
+<li>Serial.print() -
+<ul>
+<li>print 東西 藉由 serial 腳，因為我的藍牙模組 是接在 Serial3 腳為 因此若要 print 東西給那個 pin 腳上所插的東西 就只要改成 Serial.print</li>
+<li>這裡有兩個Serial(Serial, Serial3) 我使用Serial是因為想要在 serial monitor上也可以顯示</li>
+</ul></li>
+<li>Serial.println() - 跟 Serial.print 一樣，只是多了換行的功能。</li>
+<li>Serial3.read - 讀取Serial3 腳位接收到的資料
+<ul>
+<li>delay() - () 裡面的數字單位為毫秒 , 一秒=1000 毫秒 因此若要 delay 一秒 就是 delay(1000)</li>
+</ul></li>
+</ul>
+<pre class="sourceCode CPP"><code class="sourceCode cpp"><span class="co">//Slave code</span>
+<span class="co">/************</span>
+<span class="co">Created 2012</span>
+<span class="co">by 許肇驛 Hsu Chao-YI</span>
+<span class="co">E-mail: ps2steve2005@hotmail.com </span>
+<span class="co">This code is use for communication between BT and BT  with each arduino board.</span>
+<span class="co">***********/</span>
+<span class="dt">int</span> ledPin= <span class="dv">13</span>;
+<span class="dt">char</span>  cometemp;
+<span class="dt">void</span> setup() {
+  pinMode(ledPin,OUTPUT);
+  Serial.begin(<span class="dv">9600</span>);
+  Serial.print(<span class="st">&quot;$$$&quot;</span>);
+  delay(<span class="dv">100</span>);
+  Serial.println(<span class="st">&quot;SM,0&quot;</span>);
+  delay(<span class="dv">100</span>);
+  Serial.println(<span class="st">&quot;---&quot;</span>);
+}
+<span class="dt">void</span> loop()
+{
+<span class="kw">if</span>( Serial.available())
+{ 
+    Serial.print(&#39;y&#39;);
+    cometemp= Serial.read();
+    <span class="kw">switch</span>(cometemp){
+  <span class="kw">case</span> a:
+   <span class="kw">for</span>(<span class="dt">int</span> i=<span class="dv">0</span>;i&lt;=<span class="dv">5</span>;i++){
+   digitalWrite(ledPin,HIGH);
+   delay(<span class="dv">400</span>);
+   digitalWrite(ledPin,LOW);
+   delay(<span class="dv">300</span>);}
+   <span class="kw">break</span>;
+  <span class="kw">case</span> s:
+   digitalWrite(ledPin,HIGH);
+   delay(<span class="dv">5000</span>);
+   <span class="kw">break</span>;
+  <span class="kw">case</span> d:
+   digitalWrite(ledPin,LOW);
+   delay(<span class="dv">5000</span>);
+   <span class="kw">break</span>;}
+}}</code></pre>
+<div class="figure">
+<img src="../img/ArduinoBluetooth_DSCN2103.JPG" alt="圖、當在尋找配對的裝置時 會紅燈閃爍" /><p class="caption">圖、當在尋找配對的裝置時 會紅燈閃爍</p>
+</div>
+<div class="figure">
+<img src="../img/ArduinoBluetooth_MATCH.jpg" alt="圖、配對成功後會顯示綠燈" /><p class="caption">圖、配對成功後會顯示綠燈</p>
+</div>
+<h3 id="參考文獻"><a href="#參考文獻">參考文獻</a></h3>
+<ul>
+<li><a href="http://playground.arduino.cc/Learning/Tutorial01">Wireless communication with PC and Arduino board using bluetooth</a></li>
+<li><a href="https://www.sparkfun.com/datasheets/Wireless/Bluetooth/rn-bluetooth-um.pdf">Roving Networks Bluetooth™ Product User Manual (PDF)</a></li>
+<li><a href="http://arduino.cc/en/Main/ArduinoBoardMega2560">Arduino Mega 2560</a></li>
+</ul>
+<p>【本文作者為許肇驛，原文網址為： <a href="http://choyihsu.blogspot.tw/2012/12/arduino.html">http://choyihsu.blogspot.tw/2012/12/arduino.html</a> ，由陳鍾誠編輯後納入本雜誌】</p>
+</div>
+<div id="footer">
+<a href="https://www.facebook.com/groups/programmerMagazine/">程式人雜誌</a> ，採用 <a href="http://creativecommons.org/licenses/by-sa/3.0/tw/ ">創作共用：姓名標示、相同方式分享</a> 授權，歡迎加入 <a href="https://www.facebook.com/groups/programmerMagazine/">雜誌社團</a>
+</div>
+</body>
+</html>

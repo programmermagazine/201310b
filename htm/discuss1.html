@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+  </style>
+  <link rel="stylesheet" href="../css/pmag.css" type="text/css" />
+</head>
+<body>
+<div id="header_wrap">
+   <h1><a href="https://www.facebook.com/groups/programmerMagazine">程式人雜誌</a> <sub> --  <a href="https://dl.dropbox.com/u/101584453/pmag/201309/htm/home.html">2013 年 10 月號</a> (開放公益出版品)</sub></h1>
+</div>
+<div id="content">
+<div id="TOC">
+<ul>
+<li><a href="#討論關於-c-語言的資料結構函式庫與記憶體分配問題">討論：關於 C 語言的「資料結構函式庫」與「記憶體分配」問題</a></li>
+</ul>
+</div>
+<h2 id="討論關於-c-語言的資料結構函式庫與記憶體分配問題"><a href="#討論關於-c-語言的資料結構函式庫與記憶體分配問題">討論：關於 C 語言的「資料結構函式庫」與「記憶體分配」問題</a></h2>
+<h3 id="問題-1-c-語言的-hashtable"><a href="#問題-1-c-語言的-hashtable">問題 1： C 語言的 HashTable</a></h3>
+<p>討論網址： <a href="https://www.facebook.com/groups/programmerMagazine/permalink/707649472585105/">https://www.facebook.com/groups/programmerMagazine/permalink/707649472585105/</a></p>
+<blockquote>
+<p>請問大家在寫 C 語言的時候，如果需要一個 HashTable ，那你會怎麼做呢？</p>
+<ol style="list-style-type: decimal">
+<li>用 OpenSource .... 哪一個呢？</li>
+<li>自己寫一個 .....</li>
+<li>其他 .....</li>
+</ol>
+</blockquote>
+<p>心得：</p>
+<ol style="list-style-type: decimal">
+<li>C 語言標準函式庫當中，沒有納入「常用的資料結構」，於是只好選用「非標準函式庫」。</li>
+<li>如果用 C++，則有 std:map 可以用。</li>
+<li>如果用 GNU glibc 或 POSIX 平台，則可以用 hsearch 函數。</li>
+<li>如果用 GTK 的基礎函式庫 glib，則有完整的「常用的資料結構」。</li>
+<li>網路上也有很多 C 的資料結構函式庫，請參考下列討論網址：
+<ul>
+<li>Stackoverflow: <a href="http://stackoverflow.com/questions/668501/are-there-any-open-source-c-libraries-with-common-data-structures">Are there any open source C libraries with common data structures?</a></li>
+</ul></li>
+</ol>
+<h3 id="問題-2-gtk-裏的-glib-好用嗎"><a href="#問題-2-gtk-裏的-glib-好用嗎">問題 2： GTK 裏的 Glib 好用嗎？</a></h3>
+<p>討論網址： <a href="https://www.facebook.com/groups/programmerMagazine/permalink/707669262583126/">https://www.facebook.com/groups/programmerMagazine/permalink/707669262583126/</a></p>
+<blockquote>
+<p>請問 Glib 好用嗎？在 windows 上呢？</p>
+<p><a href="http://fred-zone.blogspot.tw/2008/03/glib-programing-io-giochannel.html">http://fred-zone.blogspot.tw/2008/03/glib-programing-io-giochannel.html</a></p>
+</blockquote>
+<p>心得：</p>
+<ol style="list-style-type: decimal">
+<li>雖然 GTK 似乎被批評的很慘，但是 Glib 應該是很好用的，風評很不錯！</li>
+<li>GTK 與 Glib 的用法，可以參考良葛格的網站
+<ul>
+<li><a href="http://openhome.cc/Gossip/GTKGossip/index.html">http://openhome.cc/Gossip/GTKGossip/index.html</a></li>
+</ul></li>
+</ol>
+<h3 id="問題-3-malloc-的使用會影響效能嗎"><a href="#問題-3-malloc-的使用會影響效能嗎">問題 3： malloc 的使用會影響效能嗎？</a></h3>
+<p>討論網址： <a href="https://www.facebook.com/groups/programmerMagazine/permalink/707655949251124/">https://www.facebook.com/groups/programmerMagazine/permalink/707655949251124/</a></p>
+<blockquote>
+<p>再一個問題是，你在 C 語言裡會盡可能使用靜態宣告，或常常使用 malloc 分配呢？</p>
+<ol style="list-style-type: decimal">
+<li>盡可能使用靜態</li>
+<li>每次都使用動態 malloc 分配，即使是字串複製也會使用 strdup</li>
+<li>malloc 時盡可能一次分配大塊，然後在慢慢使用。(例如用一大塊記憶體當字串表 )</li>
+</ol>
+</blockquote>
+<p>心得：</p>
+<ol style="list-style-type: decimal">
+<li>這個問題引起的爭論特別多，所以有 158 則回應。</li>
+<li>似乎只要考慮好區域性的問題 (locality)，那麼用哪一種分配策略應該對效能影向不大 (但嵌入式就不見得了)。</li>
+<li>如果採用 「2. 每次 malloc 小塊的方式」，有可能「區域性」會不好，所以要小心。</li>
+<li>區域性的問題主要是影響到快取的 Hit Rate (cache hit/cache miss)。</li>
+<li>二維以上陣列的存取順序，影響快取非常嚴重，因此必須要注意存取順序問題，例如以下狀況。</li>
+</ol>
+<p>我最近讀一本書，書名是 「 <a href="http://book.douban.com/subject/5333562/">深入理解计算机系统</a> 」， 發現二維以上陣列的存取順序對 locality 影響很深，而 locality 對「cache hit rate 影響很深」 特別是像以下程式：</p>
+<pre class="sourceCode CPP"><code class="sourceCode cpp"><span class="kw">for</span> (i=<span class="dv">0</span>; i&lt;n; i++)
+  <span class="kw">for</span> (j=<span class="dv">0</span>; j&lt;m; j++)
+    sum += a[i][j];</code></pre>
+<p>如果反過來</p>
+<pre class="sourceCode CPP"><code class="sourceCode cpp"><span class="kw">for</span> (j=<span class="dv">0</span>; j&lt;m; j++)
+  <span class="kw">for</span> (i=<span class="dv">0</span>; i&lt;n; i++)
+    sum += a[i][j];</code></pre>
+<p>這樣 locality 就會很差，執行速度可能因此而慢上數十倍啊 ....</p>
+<h3 id="結語"><a href="#結語">結語</a></h3>
+<p>雖然 C 語言是很多人都學過的，甚至還是很多人學的第一門程式語言，但其實 C 語言並不好學， 而且有很多「陷阱」。</p>
+<p>另外、C 語言的出現很早，但是標準函式庫卻很小，因此常常要使用非標準函式庫，所以更要懂得使用 OpenSource， 而且要避免採用重複功能的函式庫，以免程式膨脹過快。</p>
+<p>但是 C 語言的速度快，而且在嵌入式系統與作業系統上有強大的用途，因此很多快速與底層的應用仍然必須仰賴 C 語言。 但是要達到高速，對硬體的很多考慮仍然是必須的，像是 locality 就是其中之一。</p>
+</div>
+<div id="footer">
+<a href="https://www.facebook.com/groups/programmerMagazine/">程式人雜誌</a> ，採用 <a href="http://creativecommons.org/licenses/by-sa/3.0/tw/ ">創作共用：姓名標示、相同方式分享</a> 授權，歡迎加入 <a href="https://www.facebook.com/groups/programmerMagazine/">雜誌社團</a>
+</div>
+</body>
+</html>

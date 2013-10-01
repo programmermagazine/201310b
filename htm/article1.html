@@ -1,0 +1,137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+  </style>
+  <link rel="stylesheet" href="../css/pmag.css" type="text/css" />
+</head>
+<body>
+<div id="header_wrap">
+   <h1><a href="https://www.facebook.com/groups/programmerMagazine">程式人雜誌</a> <sub> --  <a href="https://dl.dropbox.com/u/101584453/pmag/201309/htm/home.html">2013 年 10 月號</a> (開放公益出版品)</sub></h1>
+</div>
+<div id="content">
+<div id="TOC">
+<ul>
+<li><a href="#arduino入門教學10-使用-sht15-溫溼度計-作者cooper-maa">Arduino入門教學(10) – 使用 SHT15 溫溼度計 (作者：Cooper Maa)</a></li>
+</ul>
+</div>
+<h2 id="arduino入門教學10-使用-sht15-溫溼度計-作者cooper-maa"><a href="#arduino入門教學10-使用-sht15-溫溼度計-作者cooper-maa">Arduino入門教學(10) – 使用 SHT15 溫溼度計 (作者：Cooper Maa)</a></h2>
+<h3 id="實驗目的"><a href="#實驗目的">實驗目的</a></h3>
+<p>練習使用 SHT15 溫溼度計，將讀到的溫溼度讀值輸出到 Serial Port 上。下圖為 SHT15 模組的外觀:</p>
+<div class="figure">
+<img src="../img/Arduino_SHT15.jpg" />
+</div>
+<h3 id="材料"><a href="#材料">材料</a></h3>
+<ul>
+<li>麵包板 x 1</li>
+<li>Arduino 主板 x 1</li>
+<li>SHT15 Breakout Board (分接板) x 1</li>
+<li>單心線 x N</li>
+<li>接線</li>
+<li>將 SHT15 的 VCC 接到 Arduino 的 +5V，GND 接到 Arduino 的 GND</li>
+<li>將 SHT15 的 Data 腳接到 pin11, SCK 接到 pin10</li>
+</ul>
+<div class="figure">
+<img src="../img/arduino_sht15_board.png" />
+</div>
+<p>實際接線照片:</p>
+<div class="figure">
+<img src="../img/Arduino_SHT15_board2.png" />
+</div>
+<h3 id="電路圖"><a href="#電路圖">電路圖</a></h3>
+<div class="figure">
+<img src="../img/Arduino_SHT15_circuit1.png" />
+</div>
+<h3 id="sht1x-函式庫"><a href="#sht1x-函式庫">SHT1x 函式庫</a></h3>
+<p>關於 SHT1x 溫溼計，原本使用程序是很繁瑣的(見 SHT1x and SHT7x Sample Code)，SHT1x Library 已經把事情變簡單了，現在只要安裝 SHT1x Library，就可以很輕鬆地讀取 SHT1x 系列(SHT10, SHT11, SHT15) 溫溼度計的讀值。</p>
+<p>SHT1x Library 的安裝辦法很簡單，先到官網或直接點此下載函式庫後，把檔案解壓縮放到 Arduino 的 Libraries 資料夾底下即可:</p>
+<div class="figure">
+<img src="../img/Arduino_SHT15_library_1.png" />
+</div>
+<h3 id="程式碼"><a href="#程式碼">程式碼</a></h3>
+<p>底下是 SHT15 溫溼度計的讀取範例，程式讓 Arduino 向 SHT15 讀取資料，並將讀到的溫溼度讀值輸出到 Serial Port，每秒鐘做一次(ReadSHT1x.pde)：</p>
+<pre class="sourceCode CPP"><code class="sourceCode cpp"><span class="co">/* Lab10 - SHT1x 系列(SHT10, SHT11, SHT15)溫溼度計的讀取範例</span>
+<span class="co"> * </span>
+<span class="co"> * 須安裝 SHT1x Library:</span>
+<span class="co"> *    https://github.com/practicalarduino/SHT1x/</span>
+<span class="co"> */</span>
+
+<span class="ot">#include &lt;SHT1x.h&gt;</span>
+
+<span class="co">// 定義 SHT1x 連接的腳位</span>
+<span class="ot">#define dataPin  11</span>
+<span class="ot">#define clockPin 10</span>
+
+<span class="co">// 初始化 sht1x 物件</span>
+SHT1x sht1x(dataPin, clockPin);
+
+<span class="dt">void</span> setup()
+{
+   Serial.begin(<span class="dv">9600</span>);
+}
+
+<span class="dt">void</span> loop()
+{
+  <span class="co">// 宣告三個變數&amp;#65292;分別代表溫度(攝氏), 溫度(華氏) 以及溼度</span>
+  <span class="dt">float</span> temp_c, temp_f, humidity;
+
+  <span class="co">// 讀取 SHT1x 溫溼度值</span>
+  temp_c = sht1x.readTemperatureC();
+  temp_f = sht1x.readTemperatureF();
+  humidity = sht1x.readHumidity();
+
+  <span class="co">// 將讀到的溫溼度讀值輸出至 Serial Port</span>
+  Serial.print(<span class="st">&quot;Temperature: &quot;</span>);
+  Serial.print(temp_c, <span class="dv">1</span>);  <span class="co">// 顯示到小數點後一位</span>
+  Serial.print(<span class="st">&quot;C / &quot;</span>);
+  Serial.print(temp_f, <span class="dv">1</span>);  <span class="co">// 顯示到小數點後一位</span>
+  Serial.print(<span class="st">&quot;F. Humidity: &quot;</span>);
+  Serial.print(humidity);
+  Serial.println(<span class="st">&quot;%&quot;</span>);
+
+  delay(<span class="dv">1000</span>);
+}</code></pre>
+<h3 id="範例照片影片"><a href="#範例照片影片">範例照片／影片</a></h3>
+<p>上傳程式到 Arduino 後，打開 Serial Monitor，就會看到 Arduino 送過來的溫溼度資料，如下圖：</p>
+<div class="figure">
+<img src="../img/Arduino_SHT15_Screen1.png" />
+</div>
+<h3 id="動動腦"><a href="#動動腦">動動腦</a></h3>
+<p>試修改程式，把從 SHT15 讀到的溫溼度資料輸出到 2x16 的 LCD 上。2x16 LCD 的使用方法可參考「 <a href="http://coopermaa2nd.blogspot.com/2010/12/arduino-lab9-2x16-lcd-world.html">Lab9 在 2x16 LCD 上顯示 &quot;Hello World” 訊息</a> 」 Arduino 現在可以把溫溼度資料送到 Serial Port，試在 PC 端寫一支「溫溼度 Data Log」程式，把 Arduino 送過來的溫溼度資料寫到資料庫，資料庫軟體任君選擇，要用 Excel, Access, SQLite 或 MySQL 都可以。</p>
+<p>使用你熟悉的工具(如 Excel, JavaScript/flot, Tcl)，繒製一張每日溫溼度曲線度。</p>
+<h3 id="延伸閱讀"><a href="#延伸閱讀">延伸閱讀</a></h3>
+<ul>
+<li><a href="http://www.sensirion.com/en/pdf/product_information/Datasheet-humidity-sensor-SHT1x.pdf">Sensirion SHT1x Datasheet</a></li>
+<li><a href="http://www.sensirion.com/en/pdf/product_information/Sample_Code_humidity_sensor_SHTxx.pdf">SHT1x and SHT7x Sample Code</a></li>
+<li><a href="http://www.sparkfun.com/products/8257">Sparkfun - SHT15 Breakout board</a></li>
+<li><a href="https://github.com/practicalarduino/SHT1x">SHT1x Library for Arduino</a></li>
+</ul>
+<p>【本文作者為馬萬圳，原文網址為： <a href="http://coopermaa2nd.blogspot.tw/2010/12/arduino-sht15.html">http://coopermaa2nd.blogspot.tw/2010/12/arduino-sht15.html</a> ，由陳鍾誠編輯後納入本雜誌】</p>
+</div>
+<div id="footer">
+<a href="https://www.facebook.com/groups/programmerMagazine/">程式人雜誌</a> ，採用 <a href="http://creativecommons.org/licenses/by-sa/3.0/tw/ ">創作共用：姓名標示、相同方式分享</a> 授權，歡迎加入 <a href="https://www.facebook.com/groups/programmerMagazine/">雜誌社團</a>
+</div>
+</body>
+</html>

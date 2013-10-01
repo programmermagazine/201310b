@@ -1,0 +1,782 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+  </style>
+  <link rel="stylesheet" href="../css/pmag.css" type="text/css" />
+</head>
+<body>
+<div id="header_wrap">
+   <h1><a href="https://www.facebook.com/groups/programmerMagazine">程式人雜誌</a> <sub> --  <a href="https://dl.dropbox.com/u/101584453/pmag/201309/htm/home.html">2013 年 10 月號</a> (開放公益出版品)</sub></h1>
+</div>
+<div id="content">
+<div id="TOC">
+<ul>
+<li><a href="#r-講題分享-在雲端運算環境使用-r-和-mpi-作者taiwan-r-user-group">R 講題分享 – 在雲端運算環境使用 R 和 MPI (作者：Taiwan R User Group)</a></li>
+</ul>
+</div>
+<h2 id="r-講題分享-在雲端運算環境使用-r-和-mpi-作者taiwan-r-user-group"><a href="#r-講題分享-在雲端運算環境使用-r-和-mpi-作者taiwan-r-user-group">R 講題分享 – 在雲端運算環境使用 R 和 MPI (作者：Taiwan R User Group)</a></h2>
+<h3 id="前言"><a href="#前言">前言</a></h3>
+<p>最近大數據成為顯學，人人都在談論大數據，而且大部分的人都在運用Hadoop來處理大數據。</p>
+<p>但是如果要做機器學習，或是統計模型估計時，常常需要使用疊代(iteration)。由於Hadoop是在硬碟上運作的系統，所以在疊代演算法的表現並不好。如果能夠將資料全部裝進記憶體中，那可以大大增加運算效能。</p>
+<h3 id="如何獲取足夠的記憶體"><a href="#如何獲取足夠的記憶體">如何獲取足夠的記憶體</a></h3>
+<p>原本記憶體很貴，所以一般人無法把太大的數據放入記憶體中分析。五年前想要對數GB的資料作機器學習或模型配適，對於一般人來說可能是不可能的。但是我們要將GB等級，甚至是TB等級的數據放在記憶體做分析，已經不是不可能了，所需要的費用也是可以負擔的起。</p>
+<p>由於硬體的進步，現在要弄到大記憶體的機器已經比以前相對簡單了。一種方法是買一台大記憶體的電腦。現在32G記憶體的電腦大約需要台幣3萬左右，64G記憶體的電腦在台幣10萬左右也可以入手。但是要買到記憶體能夠插到1T的機器，可能還是太昂貴。 <a href="http://www.pcworld.com/article/247903/oracle_reveals_pricing_for_its_sap_hana_rival_exalytics_signaling_imminent_release.html">Oracle SAP HANA Rival Exalytics</a> 內列的1TB記憶體的機器在去年年初仍需要135,000美元。</p>
+<p>另外一種方法就是把機器串起來，也就是分散式系統。讀者應該可以注意到，兩台32G的電腦比一台64G的便宜！當然，我們付出的代價就是要撰寫比較複雜的程式，以及要承擔網路延遲。 <a href="http://en.wikipedia.org/wiki/Message_Passing_Interface">MPI(Message Passing Interface)</a> 是一個傳統的計算協定。透過MPI的實作，如<a href="http://www.open-mpi.org/">OpenMPI</a>，我們可以把若干台電腦串起來，協同工作，解決大數據的問題。而MPI是除了Hadoop之外，另一種可以建構分散式運算的工具。</p>
+<h3 id="mpi-r-仍然是一種可用的解決方案"><a href="#mpi-r-仍然是一種可用的解決方案">MPI + R 仍然是一種可用的解決方案</a></h3>
+<p>過去MPI主要是用於解決程序間通訊問題，而且許多MPI的程式要用C來撰寫，導致開發速度低落。其實現在MPI已經可以和許多更高階的語言中使用，例如R就有套件讓開發者可以在R中使用MPI，以提升開發效率。</p>
+<p>MPI令一個讓人卻步的因素是設定繁瑣，而且需要環境一致的運算環境。由於雲端運算的進步，我們已可以方便的在各式供應商，如 <a href="http://en.wikipedia.org/wiki/Amazon_Web_Services">AWS(Amazon Web Service)</a> 上租用數十台，甚至是數百台環境一模一樣的虛擬機器。因此這部分的問題也已經獲得解決。</p>
+<p>和Hadoop相比，Hadoop現在也有基於Memory的工具，如： <a href="http://spark.incubator.apache.org/">Spark</a>和<a href="https://github.com/amplab/shark/wiki">Shark</a> 。但是這一切都是要有Hadoop系統才能開始使用這些工具。我相信很多讀者手上數據不小，但是也沒有大到要用Hadoop，那本篇文章介紹的MPI + R 的工具可能就是讀者所需要的。</p>
+<p>在這篇文章中，筆者將介紹如何在R利用MPI和AWS，並且Demo一個以23個Instance，在數分鐘內對上億筆資料做 <a href="http://en.wikipedia.org/wiki/Logistic_regression">羅吉斯迴歸(Logistic Regression)</a> 的例子。</p>
+<h3 id="未解決的問題"><a href="#未解決的問題">未解決的問題</a></h3>
+<p>然而，如何將資料分散到數十台或數百台機器上，仍然是重要的問題。這篇文章並無法解答這個問題。但是在閱讀這篇文章之後，我們仍可以避開架設Hadoop的必要性。 <a href="http://www.chrisstucchio.com/blog/2013/hadoop_hatred.html">如果資料沒這麼大，企業是不必用Hadoop的(Don't use Hadoop - your data isn't that big)。</a> <a href="http://geek.csdn.net//news/detail/2780">(譯文)</a>。</p>
+<p>普遍來說，數據在每次處理後都是會更精粹，量也會變小。本篇的方法並不適用於處理初始資料，而是有前處理過後的資料。以筆者的經驗，資料經過前處理後應當可以降低十倍甚至百倍的空間。</p>
+<h3 id="r-和-mpi"><a href="#r-和-mpi">R 和 MPI</a></h3>
+<p>在過去，R就已經能運用MPI做分散式運算了。最常見的底層套件就是 <a href="http://www.stats.uwo.ca/faculty/yu/Rmpi/"><code>Rmpi</code></a> 。基於<code>Rmpi</code>之上的還有 <a href="http://cran.r-project.org/web/packages/snow/index.html"><code>snow</code></a> 和 <a href="http://cran.r-project.org/web/packages/foreach/index.html"><code>foreach</code></a> 等比較高階的運算套件。</p>
+<p><a href="http://r-pbd.org/">pbdR: Programming with Big Data in R</a> 是2012年的專案，它以MPI為底層，並且設計成讓使用者以 <a href="http://en.wikipedia.org/wiki/SPMD">SPMD</a> 架構來撰寫分散式演算法( <a href="http://cran.r-project.org/web/packages/pbdMPI/index.html"><code>pbdMPI</code></a> )。同時他也提供好用的資料結構(如 <a href="http://cran.r-project.org/web/packages/pbdDMAT/index.html"><code>pbdDMAT</code></a> 分散式矩陣和向量)和測量運算時間( <a href="http://cran.r-project.org/web/packages/pbdPROF/index.html"><code>pbdPROF</code></a> )等工具。</p>
+<p>以筆者的經驗，在雲端運算環境之下，<code>pbdMPI</code>可能是R中最好的工具。若讀者有任何指教，非常歡迎來信建議。</p>
+<p>更完整的介紹，請參考 <a href="http://cran.r-project.org/web/views/HighPerformanceComputing.html">High-Performance and Parallel Computing with R</a>。</p>
+<h3 id="在aws架設mpi-環境"><a href="#在aws架設mpi-環境">在AWS架設MPI 環境</a></h3>
+<p>這裡以ubuntu 13.04為例，簡單介紹如何快速的在AWS預設的ubuntu 13.04 instance上架設MPI環境。限於篇幅，這裡假定讀者已經知道如何租用AWS的虛擬機器了。</p>
+<p><strong>建議讀者在防火牆設定時打開所有的TCP port</strong></p>
+<p>我們用完就關閉虛擬機器了，所以安全上的疑慮應該還好。</p>
+<h3 id="使用public-ami"><a href="#使用public-ami">使用Public AMI</a></h3>
+<p>筆者有在US East(N. Virginia)釋出兩個AMI，想要快速嘗試的讀者可以直接用AMI來建立虛擬機器，這樣就可以省略許多設定步驟。相關的設定方法請參考影片： <a href="http://youtu.be/m1vtPESsFqM">http://youtu.be/m1vtPESsFqM</a> 。</p>
+<p>AMI id:</p>
+<ul>
+<li>MPI-master: ami-adeba1c4</li>
+<li>MPI-slave: ami-c9eba1a0</li>
+</ul>
+<h3 id="安裝需要的工具"><a href="#安裝需要的工具">安裝需要的工具</a></h3>
+<p>筆者很喜歡ubuntu的套件庫，因為它們已經納入許多R相關的套件：</p>
+<ol style="list-style-type: decimal">
+<li><p>在shell底下安裝R和<code>openmpi</code></p>
+<pre class="sh"><code>sudo apt-get update
+sudo apt-get install r-base openmpi-bin samba cifs-utils
+sudo apt-get build-dep r-cran-rmpi</code></pre></li>
+<li><p>在R 底下安裝<code>pbdMPI</code></p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">install.packages</span>(<span class="st">&#39;pbdMPI&#39;</span>)</code></pre></li>
+</ol>
+<p>ps. <code>cifs-utils</code> 套件是因為筆者使用 samba 服務讓 slave 掛載 master 的磁碟，如果讀者要用其他方式，則請在 slave 上安裝對應的套件。</p>
+<p>Slave的設定到此為止，接下來把這個虛擬機器建立成AMI，並取名叫 <code>MPI-slave</code> 。但是 Master 還需要額外的設定。請讀者先不要關閉機器，接續做以下的設定。</p>
+<h3 id="samba選擇性"><a href="#samba選擇性">Samba(選擇性)</a></h3>
+<p>筆者是利用samba來讓所有機器掛載同樣的遠端磁碟，以進行SPMD架構的分析。熟悉NFS或其他遠端硬碟設定方式的讀者，可以按照自己習慣的方式做設定。</p>
+<ol style="list-style-type: decimal">
+<li><p>先建立<code>Repository</code>目錄：</p>
+<pre class="sh"><code>mkdir -p ~/Repository</code></pre></li>
+<li><p>分享資料夾 在<code>/etc/samba/smb.conf</code>最底下加入：</p></li>
+</ol>
+<pre><code>[Repository]
+   path = /home/ubuntu/Repository
+   browseable = no
+   read only = yes
+   guest ok = yes</code></pre>
+<ol start="3" style="list-style-type: decimal">
+<li>重新啟動samba</li>
+</ol>
+<pre class="sh"><code>sudo testparm
+sudo service smbd restart</code></pre>
+<p>如此一來, slaves就可以掛載master上的資料夾了。</p>
+<h3 id="rstudio-server選擇性"><a href="#rstudio-server選擇性">Rstudio Server(選擇性)</a></h3>
+<p>如果讀者想要直接在雲端上編輯程式碼，那筆者推薦使用rstudio server版本。安裝容易，而且提供用瀏覽器來編輯程式碼的功能。</p>
+<p>在shell上安裝Rstudio server:</p>
+<pre class="sh"><code>sudo apt-get install gdebi-core libapparmor1
+wget http://download2.rstudio.org/rstudio-server-0.97.551-amd64.deb
+sudo gdebi rstudio-server-0.97.551-amd64.deb</code></pre>
+<p>安裝完畢後，先設定使用者密碼：</p>
+<pre class="sh"><code>sudo passwd ubuntu</code></pre>
+<p>接著只要防火牆有開port 8787，讀者可以打開 <a href="http://public.domain.name.of.aws.instance:8787">http://public.domain.name.of.aws.instance:8787</a> ，輸入使用者(<code>ubuntu</code>)和剛剛設定的密碼後，應該會看到Rstudio的GUI介面。</p>
+<p>細節請參考 <a href="http://www.rstudio.com/ide/download/server">Rstudio 官方文件</a></p>
+<p>之後，我們只要編輯 master 上的文件，透過 samba 則所有的 Slave 都可以即時運用編輯後的結果。</p>
+<h3 id="openssh-設定"><a href="#openssh-設定">OpenSSH 設定</a></h3>
+<p><code>openmpi</code>在跨機器時會使用 openssh ，所以這裡要針對 openssh 做一點設定：</p>
+<ol style="list-style-type: decimal">
+<li>不強制認證Host</li>
+</ol>
+<p>編輯<code>/etc/ssh/ssh_config</code>，新增：</p>
+<pre><code>StrictHostKeyChecking no</code></pre>
+<ol start="2" style="list-style-type: decimal">
+<li>在 AWS 建立 key pair，取名為 pbdMPI 。此時讀者的電腦應會下載一個檔案：<code>pbdMPI.pem</code></li>
+<li>將<code>pbdMPI.pem</code>上傳到虛擬機器中，並且重新命名並放置於 <code>/home/ubuntu/.ssh/id_rsa</code></li>
+</ol>
+<p>到這裡，Master的設定也大功告成了。接著馬上把虛擬機器製作成AMI，並取名為 MPI-master。</p>
+<h3 id="複製機器"><a href="#複製機器">複製機器</a></h3>
+<p>請讀者利用剛剛製作的 AMI：(MPI-slave) ，建立新的虛擬機器來當作 slave 吧！在設定時只需要注意：</p>
+<ol style="list-style-type: decimal">
+<li>Access key-pair 要選擇剛剛建立的 pbdMPI</li>
+<li>防火牆設定要把所有 TCP/IP port 打開。</li>
+</ol>
+<h3 id="設定ip"><a href="#設定ip">設定IP</a></h3>
+<p>依序將 master 和 slaves 的 private ip 儲存成 master 下的 <code>~/pbdMPI.conf</code></p>
+<pre><code>xx.xx.xx.xx # master 的ip 要第一個
+xx.xx.xx.xx
+xx.xx.xx.xx</code></pre>
+<p>如果 instance 少，讀者可以從 AWS management console 中一個一個查詢。如果 instance 多，可以使用 boto 這個 python 套件來查詢機器 ip 後，複製到 <code>~/pbdMPI.conf</code>。</p>
+<pre class="py"><code>#!/usr/bin/python2.7
+# -*- coding: utf-8 -*-
+
+__author__ = &quot;Wush Wu&quot;
+__copyright__ = &quot;© 2013, Wush Wu&quot;
+__license__ = &quot;GPL 3.0&quot;
+
+import boto.ec2
+import os
+
+conn = boto.ec2.connect_to_region(&quot;us-east-1&quot;,
+aws_access_key_id=&#39;put your access key here&#39;,
+aws_secret_access_key=&#39;put your secret access key here&#39;)
+
+ec2_prototype_ip = &quot;&quot;
+ec2_master_ip = &quot;&quot;
+
+for res in conn.get_all_instances():
+  for instance in res.instances:
+    if instance.key_name != &quot;put the name of key pair here&quot;:
+      continue
+    if instance.state != &quot;running&quot;:
+      continue
+    print &quot;rds-receiver:&quot;
+    print instance.public_dns_name
+    print &quot;---&quot;
+    print instance.private_ip_address
+
+
+for res in conn.get_all_instances():
+  for instance in res.instances:
+    if instance.key_name != &quot;pbdMPI&quot;:
+      continue
+    if instance.state != &quot;running&quot;:
+      continue
+    print instance.private_ip_address</code></pre>
+<p>不熟悉命令列編輯器的讀者，可以用Rstudio編輯器來編輯<code>~/pbdMPI.conf</code>喔。</p>
+<h3 id="讓-slave-掛載-master-的磁碟"><a href="#讓-slave-掛載-master-的磁碟">讓 Slave 掛載 master 的磁碟</a></h3>
+<p>這裡筆者也提供一個 R script 來讓 master 透過 <code>~/pbdMPI.conf</code> 的內容來透過 ssh 讓 slave 掛載 master 上的磁碟。同時也可以用來測試 ssh 的設定是否正確。</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#! /usr/bin/Rscript</span>
+
+<span class="co"># __author__ = &quot;Wush Wu&quot;</span>
+<span class="co"># __copyright__ = &quot;© 2013, Wush Wu&quot;</span>
+<span class="co"># __license__ = &quot;GPL 3.0&quot;</span>
+
+src &lt;-<span class="st"> </span><span class="kw">readLines</span>(<span class="st">&quot;~/pbdMPI.conf&quot;</span>)
+master.ip &lt;-<span class="st"> </span>src[<span class="dv">1</span>]
+slaves.ip &lt;-<span class="st"> </span><span class="kw">tail</span>(src, -<span class="dv">1</span>)
+
+for(slave.ip in slaves.ip) {
+  <span class="kw">system</span>(<span class="kw">sprintf</span>(<span class="st">&#39;ssh %s &quot;sudo mount //%s/Repository ~/Repository -o guest&quot; &amp;&#39;</span>, slave.ip, master.ip))
+}</code></pre>
+<p>將上述程式碼存成 <code>mount.R</code> 後在 shell 執行：</p>
+<pre class="sh"><code>Rscript mount.R</code></pre>
+<h3 id="hello-pbdmpi"><a href="#hello-pbdmpi">Hello pbdMPI</a></h3>
+<p>最後終於可以來測試pbdMPI的環境是否設定成功了！</p>
+<p>依照以下內容建立 <code>~/Repository/hello.R</code></p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#! /usr/bin/Rscript</span>
+
+<span class="kw">suppressPackageStartupMessages</span>(<span class="kw">library</span>(pbdMPI))
+<span class="kw">init</span>()
+<span class="kw">print</span>(<span class="kw">sprintf</span>(<span class="st">&quot;Hello pbdMPI from node %d&quot;</span>, <span class="kw">comm.rank</span>()))
+<span class="kw">finalize</span>()</code></pre>
+<p>最後執行shell script:</p>
+<pre class="sh"><code>mpirun -np 3 --hostfile ~/pbdMPI.conf Rscript ~/Repository/hello.R</code></pre>
+<p>有沒有看到以下的訊息呢？</p>
+<pre class="sh"><code>[1][1]
+ &quot;Hello pbdMPI from node 2&quot;
+ &quot;Hello pbdMPI from node 1&quot;
+[1] &quot;Hello pbdMPI from node 0&quot;</code></pre>
+<p>順序可能會隨機改變，不過只要看到類似的內容，就代表我們成功的設定好pbdMPI的環境了！</p>
+<h3 id="logistic-regression-簡介"><a href="#logistic-regression-簡介">Logistic Regression 簡介</a></h3>
+<p>Logistic Regression 是一種 supervised learning 的方法，也是迴歸分析用於類別形變數的一種變形，目前在許多領域上有許多應用。例如在 <a href="http://wired.tw/2013/07/11/yahoo_amazon_amplab_spark/index.html">雅虎挑戰Google龍頭地位的新秘密武器：柏克萊博士開發比Hadoop更強的新系統Spark</a> 中就有提到 logistic regression 被用來從數據中找到模式。筆者限於能力，只能簡單地介紹 Logistic Regression，有興趣的讀者可以參考這篇很棒的文章： <a href="http://cseweb.ucsd.edu/~elkan/250B/logreg.pdf">Maximum Likelihood, Logistic Regression and Stochastic Gradient Training</a> 。</p>
+<p>簡單來說， Logistic Regression 是尋找 <img src="../timg/y_i_8d62e469fb30ed435a668eb5c035b1f6.jpg" /> 發生 TRUE 或 FALSE 機率和 <img src="../timg/x_i_1ba8aaab47179b3d3e24b0ccea9f4e30.jpg" /> 之間的關係。為了避免發生機率值小於0或大於1的不合理現象，所以會再用logit函數把機率值和整條實數線做連結。</p>
+<p>一種 Logistic Regression 的表示式為：</p>
+<div class="figure">
+<img src="../timg/P_y_i_pm_908e6b3623af0fa7eb7893d17b0a0577.jpg" />
+</div>
+<p>透過 Maximum Likelihood 和 <img src="../timg/L_2_07cbd6c155424e110559a84df364be5a.jpg" /> Regularization，我們可以算出要做最佳化的目標函數 <img src="../timg/f_8fa14cdd754f91cc6554c9e71929cce7.jpg" /> 、Gradient <img src="../timg/_nabla_f_8b89a43d93ebcb54fa54d24afb9e51b8.jpg" /> 和 Hassian <img src="../timg/_nabla_2_26fc9f507ebe1b808449f8f0cd56c9a7.jpg" /> 。</p>
+<ul>
+<li><img src="../timg/f_w_frac_42fccca098b26396cc4b2df69921769b.jpg" /></li>
+<li><img src="../timg/_nabla_f_b158d7803254a6fc013ba44ca41d078b.jpg" /></li>
+<li><img src="../timg/_nabla_2_dc6c012bd0fcddc9f54e8ea08712a89b.jpg" /></li>
+<li><img src="../timg/D__ii_fr_e805ec74096e8806a937fa11f78c5a5c.jpg" /></li>
+<li><img src="../timg/X_left_b_e1a12bcf588f1ff52a43e8f4cf6cba81.jpg" title="fig:" /></li>
+</ul>
+<p>計算上，我們要找到能夠最小化 <img src="../timg/f_8fa14cdd754f91cc6554c9e71929cce7.jpg" /> 的 <img src="../timg/w_f1290186a5d0b1ceab27f4e77c0c5d68.jpg" /> 。</p>
+<h3 id="最佳化"><a href="#最佳化">最佳化</a></h3>
+<p>使用者也可以挑選任何計算最佳化的函式庫，要注意的是若參數很多( <img src="../timg/w_f1290186a5d0b1ceab27f4e77c0c5d68.jpg" /> 很長)的時候，函式庫建議要避開直接計算 <img src="../timg/_nabla_2_2c4aeb2711d97003e66605c5f26281fd.jpg" /> 這個矩陣的方法。筆者不是最佳化的專家，找了幾個 R 內建的方式都跑不完，只好抽出 <a href="http://www.csie.ntu.edu.tw/~cjlin/liblinear/">LIBLINEAR</a> 中的 trusted region 演算法來用囉。抽出來的核心已經包成一個 R 套件，請讀者在 R 中安裝 <code>Rcpp</code> 之後在 shell 執行：</p>
+<pre><code>wget https://bitbucket.org/wush978/largescalelogisticregression/get/hstrust.zip
+unzip hstrust.zip
+R CMD INSTALL wush978-largescalelogisticregression-4daf9c5bba5c</code></pre>
+<p>應該就可以安裝了。</p>
+<h3 id="data-and-scaling"><a href="#data-and-scaling">Data and Scaling</a></h3>
+<p>這裡以有 Big Data 的 iris 之稱的 <a href="http://stat-computing.org/dataexpo/2009/">airline</a> 資料為例。這裡有自 1987 至 2008 年的飛行資料。</p>
+<p>假設我們要研究飛機有無 Delay 和起飛的機場有無關係，就可以運用剛剛介紹的 Logistic Regression 來做分析。又為了要試試看剛剛介紹的 pbdMPI ，我們就直接依照上述的介紹，在 AWS 上開 23 台電腦，每台電腦來處理一年的資料，來試跑吧！</p>
+<p>ps. 整趟試跑可能會花費你個位數美元左右的金額。</p>
+<h3 id="download-data"><a href="#download-data">Download Data</a></h3>
+<p>首先我們先來下載 airline 的 Data 吧。為了嘗鮮，就讓我們用 <code>pbdMPI</code> 來下載。</p>
+<p>pbdMPI所採用的SPMD模型，就是要讓 23 台機器都來執行同樣的程式碼檔案。這也是為什麼 Master node 要用 samba 來開網路共享，這樣我們才能在 master 上編輯 script 後，能夠自動讓所有的 node 看到。</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(pbdMPI)
+
+<span class="kw">init</span>()
+
+if(<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  url &lt;-<span class="st"> </span><span class="kw">sprintf</span>(<span class="st">&quot;http://stat-computing.org/dataexpo/2009/%d.csv.bz2&quot;</span>, (<span class="dv">1987</span>:<span class="dv">2008</span>)[<span class="kw">comm.rank</span>()])
+  <span class="kw">download.file</span>(url, <span class="st">&quot;~/data.bz2&quot;</span>)
+}
+
+<span class="kw">finalize</span>()</code></pre>
+<p>這裡 <code>init</code> 就是要啓動底層 mpi 的 communicators, 而 <code>finalize</code> 則是要終止 mpi communicators ，請記得在退出R程序之前 <code>finalize</code> ，否則 openmpi 會直接強制執行所有串起來的R程序的。</p>
+<p>中間運用到的 <code>comm.rank</code> 會依照機器在 <code>~/pbdMPI.conf</code> 的順序，從 0 開始回報 R 程序的序號。運用這個序號，就可以讓 22 台 slave 各自下載對應的 airline dataset。</p>
+<p>將檔案儲存好之後（記得放在 Repository 資料夾之後，才能讓所有電腦看到），執行：</p>
+<pre class="sh"><code>mpirun -np 23 --hostfile ~/pbdMPI.conf Rscript xxx.R</code></pre>
+<p>23 台電腦就會執行上面的程式碼，大家一起 <code>init</code> ，一起進入邏輯判斷 <code>if(comm.rank() != 0)</code> 。所以除了 master(<code>comm.rank()</code> 為 0 的 node ) 之外，其他 22 台電腦都各自去抓取資料了！而且每台電腦抓取的資料都不同，達到分工合作的效果。最後再大家一起 <code>finalize</code>。這裡， 23 個 R 都會等到大家都執行到這之後，再各自離開程序。</p>
+<p>這就是一個最簡單的SPMD的應用範例。</p>
+<h3 id="rds"><a href="#rds">Rds</a></h3>
+<p>由於下載下來的格式是.bz的壓縮檔案，我們先將格式轉成R原生的儲存格式以加快後續載入資料的速度：</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">suppressPackageStartupMessages</span>(<span class="kw">library</span>(pbdMPI))
+
+<span class="kw">init</span>()
+
+if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  data.src &lt;-<span class="st"> </span><span class="kw">bzfile</span>(<span class="st">&quot;~/data.bz2&quot;</span>)
+  airline &lt;-<span class="st"> </span><span class="kw">read.csv</span>(data.src, <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>)
+  <span class="kw">saveRDS</span>(airline, <span class="st">&quot;~/data.Rds&quot;</span>)
+}
+<span class="kw">barrier</span>()
+<span class="kw">comm.print</span>(<span class="st">&quot;Finish!&quot;</span>)
+<span class="kw">finalize</span>()</code></pre>
+<p>剛剛是不是覺得套件載入訊息很洗螢幕呢？我們可以用 <code>suppressPackageStartupMessages</code> 來隱藏載入訊息。</p>
+<p>這裡我又多使用了 <code>barrier</code> 和 <code>comm.print</code> 兩個函數。<code>barrier</code> 是一個作同步的函數，它會確保 23 個 R instances 都執行到這一行之後，才會再往下執行。否則 <code>master</code> 因為不用做資料壓縮，就會一鼓作氣的印出 &quot;finish&quot; 後在 <code>finalize</code> 等它的好朋友，而其他的 node 就會氣喘呼呼的在那邊解壓縮資料。</p>
+<p><code>comm.print</code> 是一個很方便的函數，只會讓特定的 node(預設是master) 印訊息到 stdout ，畫面才不會像之前的範例這麼鬧哄哄的。</p>
+<p>這個函數很消耗時間，所以大家可以想像如果只用一台電腦做這些事情，要等多久。</p>
+<h3 id="count-instances"><a href="#count-instances">Count Instances</a></h3>
+<p>接著讓我們來看一下每年各有有多少筆資料吧！</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">suppressPackageStartupMessages</span>(<span class="kw">library</span>(pbdMPI))
+<span class="kw">init</span>()
+
+if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  airline &lt;-<span class="st"> </span><span class="kw">readRDS</span>(<span class="st">&quot;~/data.Rds&quot;</span>)
+  n &lt;-<span class="st"> </span><span class="kw">gather</span>(<span class="kw">nrow</span>(airline))
+} else {
+  n &lt;-<span class="st"> </span><span class="kw">gather</span>(0L)
+}
+<span class="kw">comm.print</span>(n)
+
+<span class="kw">finalize</span>()</code></pre>
+<p>大家應該已經熟悉 SPMD 的模式了，也可以看懂前面就是讓除了 master 以外的 node 讀取好不容易存好的 <code>Rds</code> 檔案。</p>
+<p><code>gather</code> 函數會將指定的物件全部依序集中到一個特定的 node ，預設是 master 。所以我們可以看到最後 <code>n</code> 就成為一個 <code>integer vector</code> ，依序代表自1987年到2008年的資料個數。</p>
+<p><code>gather</code> 這類函數就是MPI的賣點。 MPI 提供了許多 API 供 Process 之間傳遞訊息，讓程式設計師可以寫出平行化的程式。</p>
+<p>另外這裡 master 的 <code>gather(0L, ...</code> 中的 <code>0L</code> 是為了保持通訊的效能。因為 <code>nrow(airport)</code> 是整數， 0L 會讓所有人傳遞的訊息是一致的，而不用做轉型。 <code>gather</code> 也可以指定 buffer ，也就是被傳遞的物件暫時儲存的地方，這可以加快 pbdMPI 通訊的速度。然而使用 buffer 也要很小心，如果傳遞的物件形態不一致時：</p>
+<pre class="sourceCode r"><code class="sourceCode r">buffer &lt;-<span class="st"> </span><span class="kw">integer</span>(<span class="dv">23</span>)
+if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  n &lt;-<span class="st"> </span><span class="kw">gather</span>(<span class="kw">norw</span>(iris), b)
+} else {
+  n &lt;-<span class="st"> </span><span class="kw">gather</span>(<span class="fl">0.0</span>, b)
+}</code></pre>
+<p>就準備看 C API 的錯誤訊息吧！！</p>
+<pre><code>Error in gather(0, b) : 
+  REAL() can only be applied to a &#39;numeric&#39;, not a &#39;integer&#39;
+Calls: gather -&gt; gather -&gt; .Call
+Execution halted</code></pre>
+<p>pbdMPI 除了提供方便的 API (會自動處理形態問題)給一般的 R 使用者之外，也提供讓熟悉R底層物件資料結構的使用者，寫出進階語法的空間。</p>
+<p>所以最終呢，我們應該會看到：</p>
+<pre><code>COMM.RANK = 0
+[[1]]
+[1] 0
+
+[[2]]
+[1] 1311826
+
+[[3]]
+[1] 5202096
+
+[[4]]
+[1] 5041200
+
+...</code></pre>
+<p><code>gather</code> 預設是把東西裝到 <code>list</code> 之中，使用者想要直接壓成如 <code>integer vector</code> 的話，可以加上 <code>unlist = TRUE</code> 這個參數。</p>
+<h3 id="sum-instances"><a href="#sum-instances">Sum Instances</a></h3>
+<p>接著讓我們來計算 22 年來總共有多少筆資料。什麼？直接把剛剛印出來的結果加總？那不有趣啊，讓我們用 23 台電腦一起算比較熱鬧，也可以趁機再學一個函數。</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">suppressPackageStartupMessages</span>(<span class="kw">library</span>(pbdMPI))
+<span class="kw">init</span>()
+
+if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  airline &lt;-<span class="st"> </span><span class="kw">readRDS</span>(<span class="st">&quot;~/data.Rds&quot;</span>)
+  n &lt;-<span class="st"> </span><span class="kw">reduce</span>(<span class="kw">nrow</span>(airline), <span class="dt">op=</span><span class="st">&quot;sum&quot;</span>)
+} else {
+  n &lt;-<span class="st"> </span><span class="kw">reduce</span>(0L, <span class="dt">op=</span><span class="st">&quot;sum&quot;</span>)
+}
+<span class="kw">comm.print</span>(n)
+
+<span class="kw">finalize</span>()</code></pre>
+<p>這裡要介紹的是 <code>reduce</code>，當所有 R instance 執行 reduce 之後，大家就會將第一個參數物件匯整到 master ， master 再依照 <code>op</code> 的指示來整理匯整後的資料。也就是說， <code>reduce</code> 比 <code>gather</code> 多了一個動作，而這個動作可以透過 <code>op</code> 來控制。</p>
+<p>所以這裡的程式碼讓每個 slaves 去數自己手上資料有幾筆，然後回報給 master 後， master 再做加總。</p>
+<p>結果應該是：</p>
+<pre><code>COMM.RANK = 0
+[1] 123534969</code></pre>
+<h3 id="training"><a href="#training">Training</a></h3>
+<p>接著讓我們來分析一下，到底飛機誤點和起飛的機場有沒有關係呢？</p>
+<p>我們先丟著執行，再來講解。</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#! /usr/bin/Rscript</span>
+
+<span class="co"># __author__ = &quot;Wush Wu&quot;</span>
+<span class="co"># __copyright__ = &quot;© 2013, Wush Wu&quot;</span>
+<span class="co"># __license__ = &quot;GPL 3.0&quot;</span>
+
+<span class="kw">suppressPackageStartupMessages</span>(<span class="kw">library</span>(pbdMPI))
+<span class="kw">suppressPackageStartupMessages</span>(<span class="kw">library</span>(Matrix))
+
+start.time.all &lt;-<span class="st"> </span>start.time &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()
+
+<span class="kw">init</span>()
+
+if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  data &lt;-<span class="st"> </span><span class="kw">readRDS</span>(<span class="st">&quot;~/data.Rds&quot;</span>)
+  <span class="kw">print</span>(<span class="kw">sprintf</span>(<span class="st">&quot;nrow(data): %d (from %d)&quot;</span>, <span class="kw">nrow</span>(data), (<span class="dv">1987</span>:<span class="dv">2008</span>)[<span class="kw">comm.rank</span>()]))
+}
+
+if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+}
+<span class="kw">barrier</span>()
+<span class="kw">comm.print</span>(<span class="kw">sprintf</span>(<span class="st">&quot;Loading time: %0.2f secs&quot;</span>, <span class="kw">difftime</span>(<span class="kw">Sys.time</span>(), start.time, <span class="dt">units=</span><span class="st">&quot;secs&quot;</span>)))
+start.time &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()
+
+if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  origin.airport &lt;-<span class="st"> </span><span class="kw">unique</span>(data$Origin)
+} else {
+  origin.airport &lt;-<span class="st"> </span><span class="kw">character</span>(<span class="dv">0</span>)
+}
+
+origin.airport &lt;-<span class="st"> </span><span class="kw">allgather</span>(origin.airport, <span class="dt">unlist=</span><span class="ot">TRUE</span>)
+origin.airport &lt;-<span class="st"> </span><span class="kw">unique</span>(origin.airport)
+<span class="kw">comm.print</span>(origin.airport)
+<span class="kw">invisible</span>(<span class="kw">gc</span>())
+<span class="kw">comm.print</span>(<span class="st">&quot;encoding training data...&quot;</span>)
+if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  train.data &lt;-<span class="st"> </span><span class="kw">data.frame</span>(
+    <span class="dt">y =</span> (data$ArrDelay &gt;<span class="st"> </span><span class="dv">60</span>),
+    <span class="dt">origin =</span> <span class="kw">factor</span>(data$Origin, <span class="dt">levels=</span>origin.airport)
+  )
+  <span class="kw">rm</span>(data)
+  <span class="kw">invisible</span>(<span class="kw">gc</span>())
+}
+<span class="kw">barrier</span>()
+<span class="kw">comm.print</span>(<span class="kw">sprintf</span>(<span class="st">&quot;Encoding time: %0.2f secs&quot;</span>, <span class="kw">difftime</span>(<span class="kw">Sys.time</span>(), start.time, <span class="dt">units=</span><span class="st">&quot;secs&quot;</span>)))
+start.time &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()
+
+<span class="kw">comm.print</span>(<span class="st">&quot;constructing model matrix...&quot;</span>)
+if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  X &lt;-<span class="st"> </span><span class="kw">sparse.model.matrix</span>(y ~<span class="st"> </span>origin, train.data)
+  y &lt;-<span class="st"> </span>train.data ![](../timg/y_is_na__a5ab5b42ec8fc1f5ffc5c49519c3f9ff.jpg) y<span class="er">)</span>]
+} else {
+  X &lt;-<span class="st"> </span><span class="ot">NA</span>
+  y &lt;-<span class="st"> </span><span class="ot">NA</span>
+}
+X.size &lt;-<span class="st"> </span><span class="kw">reduce</span>(<span class="kw">object.size</span>(X), <span class="dt">op=</span><span class="st">&quot;sum&quot;</span>)
+y.size &lt;-<span class="st"> </span><span class="kw">reduce</span>(<span class="kw">object.size</span>(y), <span class="dt">op=</span><span class="st">&quot;sum&quot;</span>)
+<span class="kw">comm.print</span>(<span class="kw">sprintf</span>(<span class="st">&quot;Encoded data needs about %f GB&quot;</span>, (y.size +<span class="st"> </span>X.size) /<span class="st"> </span><span class="dv">2</span>^<span class="dv">30</span>))
+<span class="kw">comm.print</span>(<span class="kw">sprintf</span>(<span class="st">&quot;Constructing time: %0.2f secs&quot;</span>, <span class="kw">difftime</span>(<span class="kw">Sys.time</span>(), start.time, <span class="dt">units=</span><span class="st">&quot;secs&quot;</span>)))
+start.time &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()
+
+if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  x.name &lt;-<span class="st"> </span><span class="kw">colnames</span>(X)
+} else {
+  x.name &lt;-<span class="st"> </span><span class="kw">character</span>(<span class="dv">0</span>)
+}
+x.name.list &lt;-<span class="st"> </span><span class="kw">gather</span>(x.name, <span class="dt">unlist=</span><span class="ot">FALSE</span>)
+if (<span class="kw">comm.rank</span>() ==<span class="st"> </span><span class="dv">0</span>) {
+  x.name.list &lt;-<span class="st"> </span>x.name.list[-<span class="dv">1</span>]
+  <span class="kw">stopifnot</span>(
+    <span class="kw">all</span>(<span class="kw">sapply</span>(<span class="dv">1</span>:<span class="kw">length</span>(x.name.list), function(i) <span class="kw">all.equal</span>(x.name.list[[<span class="dv">1</span>]], x.name.list[[i]])))
+  )
+  x.name &lt;-<span class="st"> </span>x.name.list[[<span class="dv">1</span>]]
+}
+
+FUN &lt;-<span class="st"> </span>1L
+GRAD &lt;-<span class="st"> </span>2L
+HS &lt;-<span class="st"> </span>3L
+DIE &lt;-<span class="st"> </span>4L
+action_flag &lt;-<span class="st"> </span>0L
+
+sigma &lt;-<span class="st"> </span>function(x) {
+  <span class="dv">1</span>/(<span class="dv">1</span> +<span class="st"> </span><span class="kw">exp</span>(-x))
+}
+
+mpi_fun &lt;-<span class="st"> </span>function(w) {
+  if (<span class="kw">comm.rank</span>() ==<span class="st"> </span><span class="dv">0</span>) {
+    action_flag &lt;-<span class="st"> </span><span class="kw">bcast</span>(FUN)
+    w &lt;-<span class="st"> </span><span class="kw">bcast</span>(<span class="kw">as.numeric</span>(w))
+    regularization &lt;-<span class="st"> </span><span class="kw">sum</span>(w^<span class="dv">2</span>)/<span class="dv">2</span>
+    retval &lt;-<span class="st"> </span><span class="kw">reduce</span>(<span class="kw">as.numeric</span>(regularization), <span class="dt">op =</span> <span class="st">&quot;sum&quot;</span>)[<span class="dv">1</span>]
+  } else {
+    w &lt;&lt;-<span class="st"> </span><span class="kw">bcast</span>(w)
+    retval &lt;-<span class="st"> </span><span class="kw">sum</span>(<span class="kw">log</span>(<span class="dv">1</span> +<span class="st"> </span><span class="kw">exp</span>(<span class="kw">ifelse</span>(y, -<span class="dv">1</span>, <span class="dv">1</span>) *<span class="st"> </span><span class="kw">as.vector</span>(X %*%<span class="st"> </span>w))))
+    retval &lt;-<span class="st"> </span><span class="kw">reduce</span>(<span class="kw">as.numeric</span>(retval), <span class="dt">op =</span> <span class="st">&quot;sum&quot;</span>)
+  }
+  retval
+}
+
+mpi_grad &lt;-<span class="st"> </span>function(w) {
+  if (<span class="kw">comm.rank</span>() ==<span class="st"> </span><span class="dv">0</span>) {
+    action_flag &lt;-<span class="st"> </span><span class="kw">bcast</span>(GRAD)
+    w &lt;-<span class="st"> </span><span class="kw">bcast</span>(w)
+    regularization &lt;-<span class="st"> </span>w
+    retval &lt;-<span class="st"> </span><span class="kw">reduce</span>(regularization, <span class="dt">op =</span> <span class="st">&quot;sum&quot;</span>)
+  } else {
+    w &lt;&lt;-<span class="st"> </span><span class="kw">bcast</span>(w)
+    y.value &lt;-<span class="st"> </span><span class="kw">ifelse</span>(y, <span class="dv">1</span>, -<span class="dv">1</span>)
+    x &lt;-<span class="st"> </span>y.value *<span class="st"> </span><span class="kw">as.vector</span>(X %*%<span class="st"> </span>w)
+    d &lt;&lt;-<span class="st"> </span><span class="kw">sigma</span>(x) *<span class="st"> </span>(<span class="dv">1</span> -<span class="st"> </span><span class="kw">sigma</span>(x))
+    retval &lt;-<span class="st"> </span><span class="kw">as.vector</span>(((<span class="kw">sigma</span>(x) -<span class="st"> </span><span class="dv">1</span>) *<span class="st"> </span>y.value) %*%<span class="st"> </span>X)
+    retval &lt;-<span class="st"> </span><span class="kw">reduce</span>(retval, <span class="dt">op=</span><span class="st">&quot;sum&quot;</span>)
+  }
+  retval
+}
+
+mpi_Hs &lt;-<span class="st"> </span>function(unused, w) {
+  if (<span class="kw">comm.rank</span>() ==<span class="st"> </span><span class="dv">0</span>) {
+    action_flag &lt;-<span class="st"> </span><span class="kw">bcast</span>(HS)
+    w &lt;-<span class="st"> </span><span class="kw">bcast</span>(w)
+    regularization &lt;-<span class="st"> </span>w
+    retval &lt;-<span class="st"> </span><span class="kw">reduce</span>(regularization, <span class="dt">op =</span> <span class="st">&quot;sum&quot;</span>)
+  } else {
+    w &lt;&lt;-<span class="st"> </span><span class="kw">bcast</span>(w)
+    retval &lt;-<span class="st"> </span><span class="kw">as.vector</span>(<span class="kw">t</span>(d *<span class="st"> </span>(X %*%<span class="st"> </span>w)) %*%<span class="st"> </span>X)
+    retval &lt;-<span class="st"> </span><span class="kw">reduce</span>(retval, <span class="dt">op=</span><span class="st">&quot;sum&quot;</span>)
+  }
+  retval
+}
+
+mpi_finalize &lt;-<span class="st"> </span>function() {
+  <span class="kw">finalize</span>()
+  <span class="kw">quit</span>(<span class="st">&quot;no&quot;</span>)
+}
+
+if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  w.size &lt;-<span class="st"> </span><span class="kw">ncol</span>(X)
+} else {
+  w.size &lt;-<span class="st"> </span>0L
+}
+
+w.size.all &lt;-<span class="st"> </span><span class="kw">gather</span>(w.size, <span class="dt">unlist=</span><span class="ot">TRUE</span>)
+if (<span class="kw">comm.rank</span>() ==<span class="st"> </span><span class="dv">0</span>) {
+  w.size &lt;-<span class="st"> </span>w.size.all[-<span class="dv">1</span>]
+  w.size &lt;-<span class="st"> </span><span class="kw">unique</span>(w.size)
+  <span class="kw">stopifnot</span>(<span class="kw">length</span>(w.size) ==<span class="st"> </span><span class="dv">1</span>)
+}
+
+if (<span class="kw">comm.rank</span>() ==<span class="st"> </span><span class="dv">0</span>) {
+  <span class="kw">stopifnot</span>(<span class="kw">require</span>(HsTrust))
+  obj &lt;-<span class="st"> </span><span class="kw">new</span>(HsTrust, mpi_fun, mpi_grad, mpi_Hs, <span class="kw">length</span>(x.name))
+  r &lt;-<span class="st"> </span>obj$<span class="kw">tron</span>(<span class="fl">0.001</span>, <span class="ot">TRUE</span>)
+} else {
+  while (<span class="ot">TRUE</span>) {
+    w &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="dv">0</span>, w.size)
+    action_flag &lt;-<span class="st"> </span>-1L
+    action_flag &lt;-<span class="st"> </span><span class="kw">bcast</span>(action_flag)
+    if (action_flag ==<span class="st"> </span>DIE) {
+      <span class="kw">mpi_finalize</span>()
+    }
+    if (action_flag ==<span class="st"> </span>FUN) {
+      <span class="kw">mpi_fun</span>(w)
+    }
+    if (action_flag ==<span class="st"> </span>GRAD) {
+      <span class="kw">mpi_grad</span>(w)
+    }
+    if (action_flag ==<span class="st"> </span>HS) {
+      <span class="kw">mpi_Hs</span>(w, w)
+    }
+  }
+}
+
+action_flag &lt;-<span class="st"> </span><span class="kw">bcast</span>(DIE)
+<span class="kw">finalize</span>()
+
+
+<span class="kw">print</span>(<span class="kw">sprintf</span>(<span class="st">&quot;Training time: %0.2f secs&quot;</span>, <span class="kw">difftime</span>(<span class="kw">Sys.time</span>(), start.time, <span class="dt">units=</span><span class="st">&quot;secs&quot;</span>)))
+total.time &lt;-<span class="st"> </span><span class="kw">as.numeric</span>(<span class="kw">difftime</span>(<span class="kw">Sys.time</span>(), start.time.all, <span class="dt">units=</span><span class="st">&quot;secs&quot;</span>))
+<span class="kw">print</span>(<span class="kw">sprintf</span>(<span class="st">&quot;Total time: %0.2f&quot;</span>, total.time))
+
+<span class="kw">save</span>(r, x.name, <span class="dt">file=</span><span class="st">&quot;~/r.Rdata&quot;</span>)</code></pre>
+<p>讀者也可以先只開兩個 node:</p>
+<pre class="sh"><code>mpirun -np 2 --hostfile ~/pbdMPI.conf Rscript xxx.R</code></pre>
+<p>這樣可以先只針對 1987 年的資料很快的跑過一遍，可以快速的檢查有沒有bug。</p>
+<p>上述的程式碼做了以下的事情：</p>
+<ul>
+<li>載入資料</li>
+<li>整合所有的機場
+<ul>
+<li>抽出各年資料中起飛的機場</li>
+<li><code>alltogether</code>讓所有的電腦都可以看到所有的機場</li>
+<li>將結果整理後作編碼, <code>factor</code></li>
+</ul></li>
+<li>依據編碼結果產生model matrix
+<ul>
+<li>檢查大家編碼後的結果是否一致</li>
+</ul></li>
+<li>定義<code>mpi_fun</code>, <code>mpi_grad</code>和<code>mpi_Hs</code></li>
+<li>使用trusted region optimization</li>
+<li>輸出結果</li>
+</ul>
+<h3 id="整合所有機場"><a href="#整合所有機場">整合所有機場</a></h3>
+<p>由於各年所看到的機場不一定一致，而不一致會導致 logistic regression 的結果不具有意義，所以我們要先整和這部分。好在R內建有許多好用的工具，如 <code>unique</code> 和 <code>factor</code> 可以幫助我們對資料作編碼。</p>
+<p>編碼的意思就是，把各個機場：</p>
+<pre><code>  [1] &quot;SAN&quot; &quot;SFO&quot; &quot;BUR&quot; &quot;OAK&quot; &quot;LAX&quot; &quot;PHX&quot; &quot;SJC&quot; &quot;LAS&quot; &quot;SNA&quot; &quot;SMF&quot; &quot;ABQ&quot; &quot;MFR&quot;
+...</code></pre>
+<p>依序對應到 1, 2, 3, ... 等整數。這個對應關係，務必要所有電腦都一致，所以才會有：</p>
+<ul>
+<li><p>抽出各年資料中起飛的機場</p>
+<pre class="sourceCode r"><code class="sourceCode r">if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  origin.airport &lt;-<span class="st"> </span><span class="kw">unique</span>(data$Origin)
+} else {
+  origin.airport &lt;-<span class="st"> </span><span class="kw">character</span>(<span class="dv">0</span>)
+}</code></pre></li>
+<li><p><code>alltogether</code>的用法和前面介紹的<code>gather</code>一樣，差別在於不只是master，是所有的電腦都可以看到結果。所以大家就可以自己算出來所有的機場有哪些囉！</p>
+<pre class="sourceCode r"><code class="sourceCode r">origin.airport &lt;-<span class="st"> </span><span class="kw">allgather</span>(origin.airport, <span class="dt">unlist=</span><span class="ot">TRUE</span>)</code></pre></li>
+<li><p>將結果整理後作編碼：<code>factor</code>這個函數，其實就是把所有的類別編碼成1, 2, 3, ...，然後將所有的類別放到<code>levels</code>之中：</p>
+<pre class="sourceCode r"><code class="sourceCode r">origin.airport &lt;-<span class="st"> </span><span class="kw">unique</span>(origin.airport)
+...
+if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  train.data &lt;-<span class="st"> </span><span class="kw">data.frame</span>(
+    <span class="dt">y =</span> (data$ArrDelay &gt;<span class="st"> </span><span class="dv">60</span>),
+    <span class="dt">origin =</span> <span class="kw">factor</span>(data$Origin, <span class="dt">levels=</span>origin.airport)
+  )
+  <span class="kw">rm</span>(data)
+  <span class="kw">invisible</span>(<span class="kw">gc</span>())
+}</code></pre></li>
+</ul>
+<h3 id="model-matrix-和-formula"><a href="#model-matrix-和-formula">Model Matrix 和 formula</a></h3>
+<p>由於是類別形變數，所以我們使用 Sparse Matrix 來做 Model matrix 以節省記憶體。依據編碼結果，可以透過 <code>sparse.model.matrix</code> 來產生的 model matrix:</p>
+<p><code>y ~ origin</code> 是 R 在做 regression-like modeling 的時候常用於表示數學式關係的R物件，又叫做 <code>formula</code>。這裡 <code>y ~ origin</code> 的意思就是：</p>
+<div class="figure">
+<img src="../timg/_y_a_b___4fb62ff1202dd258df727b57df1c26b4.jpg" />
+</div>
+<p>光有關係還不夠，還要給資料來源，那就是第二個參數： <code>train.data</code> 。類似的語法可以在 <code>lm</code> 、 <code>glm</code> 和 <code>model.matrix</code> ，甚至是 <code>plot</code> 和 <code>aggregate</code> 等函數都可以用 <code>formula</code> 。這是非常方便的一個工具。</p>
+<pre class="sourceCode r"><code class="sourceCode r">X &lt;-<span class="st"> </span><span class="kw">sparse.model.matrix</span>(y ~<span class="st"> </span>origin, train.data)</code></pre>
+<p>保險起見，檢查大家編碼後的結果是否一致:</p>
+<pre class="sourceCode r"><code class="sourceCode r">if (<span class="kw">comm.rank</span>() !=<span class="st"> </span><span class="dv">0</span>) {
+  x.name &lt;-<span class="st"> </span><span class="kw">colnames</span>(X)
+} else {
+  x.name &lt;-<span class="st"> </span><span class="kw">character</span>(<span class="dv">0</span>)
+}
+x.name.list &lt;-<span class="st"> </span><span class="kw">gather</span>(x.name, <span class="dt">unlist=</span><span class="ot">FALSE</span>)
+if (<span class="kw">comm.rank</span>() ==<span class="st"> </span><span class="dv">0</span>) {
+  x.name.list &lt;-<span class="st"> </span>x.name.list[-<span class="dv">1</span>]
+  <span class="kw">stopifnot</span>(
+    <span class="kw">all</span>(<span class="kw">sapply</span>(<span class="dv">1</span>:<span class="kw">length</span>(x.name.list), function(i) <span class="kw">all.equal</span>(x.name.list[[<span class="dv">1</span>]], x.name.list[[i]])))
+  )
+  x.name &lt;-<span class="st"> </span>x.name.list[[<span class="dv">1</span>]]
+}</code></pre>
+<p>筆者是用 <code>colnames(X)</code> 來檢驗，應該每台電腦上算出來的都要一致。 <code>stopifnot</code> 是一個常用的檢驗函數，只要裡面的參數有 <code>FALSE</code> ，R就會大叫錯誤，然後直接關掉。因為沒有呼叫 <code>finalize</code> 的關係， openmpi 會毫不留情的把其他所有 R 程序，全部殺光！</p>
+<h3 id="定義-mpi_fun-mpi_grad-和-mpi_hs"><a href="#定義-mpi_fun-mpi_grad-和-mpi_hs">定義 <code>mpi_fun</code>, <code>mpi_grad</code> 和 <code>mpi_Hs</code></a></h3>
+<p>來到重頭戲了。</p>
+<p>讓我們來復習一下剛剛寫的數學式子：</p>
+<ul>
+<li><img src="../timg/f_w_frac_42fccca098b26396cc4b2df69921769b.jpg" /></li>
+<li><img src="../timg/_nabla_f_b158d7803254a6fc013ba44ca41d078b.jpg" /></li>
+<li><img src="../timg/_nabla_2_dc6c012bd0fcddc9f54e8ea08712a89b.jpg" /></li>
+<li><img src="../timg/D__ii_fr_e805ec74096e8806a937fa11f78c5a5c.jpg" /></li>
+<li><img src="../timg/X_left_b_e1a12bcf588f1ff52a43e8f4cf6cba81.jpg" title="fig:" /></li>
+</ul>
+<p>但是現在呢，所有的資料，也就是 <img src="../timg/X_left_b_e1a12bcf588f1ff52a43e8f4cf6cba81.jpg" /> ，已經被讀者們無情的拆成 22 份了： <img src="../timg/X_left_b_b1618b1df3546befe33baf498abed9a4.jpg" /> ， <img src="../timg/y_415290769594460e2e485922904f345d.jpg" /> 也同時被分屍了。</p>
+<p>那每台電腦要如何各自處理手上的資料，以及最後master怎麼整合大家各自算出來的結果呢？</p>
+<h3 id="關於-的算法"><a href="#關於-的算法">關於 <img src="../timg/f_8fa14cdd754f91cc6554c9e71929cce7.jpg" /> 的算法</a></h3>
+<p>其實 <img src="../timg/f_8fa14cdd754f91cc6554c9e71929cce7.jpg" /> 就是 <img src="../timg/x_i_1ba8aaab47179b3d3e24b0ccea9f4e30.jpg" /> , <img src="../timg/y_i_8d62e469fb30ed435a668eb5c035b1f6.jpg" /> 各自算，再加總，所以很直接：</p>
+<pre class="sourceCode r"><code class="sourceCode r">mpi_fun &lt;-<span class="st"> </span>function(w) {
+  if (<span class="kw">comm.rank</span>() ==<span class="st"> </span><span class="dv">0</span>) {
+    action_flag &lt;-<span class="st"> </span><span class="kw">bcast</span>(FUN)
+    w &lt;-<span class="st"> </span><span class="kw">bcast</span>(<span class="kw">as.numeric</span>(w))
+    regularization &lt;-<span class="st"> </span><span class="kw">sum</span>(w^<span class="dv">2</span>)/<span class="dv">2</span>
+    retval &lt;-<span class="st"> </span><span class="kw">reduce</span>(<span class="kw">as.numeric</span>(regularization), <span class="dt">op =</span> <span class="st">&quot;sum&quot;</span>)[<span class="dv">1</span>]
+  } else {
+    w &lt;&lt;-<span class="st"> </span><span class="kw">bcast</span>(w)
+    retval &lt;-<span class="st"> </span><span class="kw">sum</span>(<span class="kw">log</span>(<span class="dv">1</span> +<span class="st"> </span><span class="kw">exp</span>(<span class="kw">ifelse</span>(y, -<span class="dv">1</span>, <span class="dv">1</span>) *<span class="st"> </span><span class="kw">as.vector</span>(X %*%<span class="st"> </span>w))))
+    retval &lt;-<span class="st"> </span><span class="kw">reduce</span>(<span class="kw">as.numeric</span>(retval), <span class="dt">op =</span> <span class="st">&quot;sum&quot;</span>)
+  }
+  retval
+}</code></pre>
+<ul>
+<li>master算regularization: <img src="../timg/_sum__i__df417ef6ae240a2fb9153ca4ae19da2f.jpg" /></li>
+<li><p>各個slave就是計算自己手上的 <img src="../timg/_sum__i__bfd1a8f772db71036020fac840b76d60.jpg" /> ，也就是</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">sum</span>(<span class="kw">log</span>(<span class="dv">1</span> +<span class="st"> </span><span class="kw">exp</span>(<span class="kw">ifelse</span>(y, -<span class="dv">1</span>, <span class="dv">1</span>) *<span class="st"> </span><span class="kw">as.vector</span>(X %*%<span class="st"> </span>w))))</code></pre>
+<code>ifelse</code>這裡是要把<code>y</code>從<code>TRUE/FALSE</code>轉換成1, -1</li>
+<li><p>最後master直接再把結果全部加起來：</p>
+<pre class="sourceCode r"><code class="sourceCode r">retval &lt;-<span class="st"> </span><span class="kw">reduce</span>(<span class="kw">as.numeric</span>(regularization), <span class="dt">op =</span> <span class="st">&quot;sum&quot;</span>)[<span class="dv">1</span>]</code></pre></li>
+</ul>
+<p>R在學術界受到歡迎的其中一個理由就是，可以用近似數學式子的方式算出結果，看看 <code>sum(log(1 + exp(ifelse(y, -1, 1) * as.vector(X %*% w))))</code> ，不知道讀者是否同意呢？</p>
+<h3 id="關於-的算法-1"><a href="#關於-的算法-1">關於 <img src="../timg/_nabla_f_8b89a43d93ebcb54fa54d24afb9e51b8.jpg" /> 的算法</a></h3>
+<div class="figure">
+<img src="../timg/_nabla_f_7a1cfe905108e307bce9f3810a80042a.jpg" />
+</div>
+<p>所以這次大家要算的是和參數一樣長的向量了。仔細看看算式：</p>
+<div class="figure">
+<img src="../timg/_nabla_f_b158d7803254a6fc013ba44ca41d078b.jpg" />
+</div>
+<p>其實也和 <img src="../timg/f_8fa14cdd754f91cc6554c9e71929cce7.jpg" /> 一樣，大家各自算出 <img src="../timg/w_i_in_m_0898409895a04282f74716fb5b5c0e21.jpg" /> 之後，再傳到 master 後再相加一次就可以了。</p>
+<pre class="sourceCode r"><code class="sourceCode r">mpi_grad &lt;-<span class="st"> </span>function(w) {
+  if (<span class="kw">comm.rank</span>() ==<span class="st"> </span><span class="dv">0</span>) {
+    action_flag &lt;-<span class="st"> </span><span class="kw">bcast</span>(GRAD)
+    w &lt;-<span class="st"> </span><span class="kw">bcast</span>(w)
+    regularization &lt;-<span class="st"> </span>w
+    retval &lt;-<span class="st"> </span><span class="kw">reduce</span>(regularization, <span class="dt">op =</span> <span class="st">&quot;sum&quot;</span>)
+  } else {
+    w &lt;&lt;-<span class="st"> </span><span class="kw">bcast</span>(w)
+    y.value &lt;-<span class="st"> </span><span class="kw">ifelse</span>(y, <span class="dv">1</span>, -<span class="dv">1</span>)
+    x &lt;-<span class="st"> </span>y.value *<span class="st"> </span><span class="kw">as.vector</span>(X %*%<span class="st"> </span>w)
+    d &lt;&lt;-<span class="st"> </span><span class="kw">sigma</span>(x) *<span class="st"> </span>(<span class="dv">1</span> -<span class="st"> </span><span class="kw">sigma</span>(x))
+    retval &lt;-<span class="st"> </span><span class="kw">as.vector</span>(((<span class="kw">sigma</span>(x) -<span class="st"> </span><span class="dv">1</span>) *<span class="st"> </span>y.value) %*%<span class="st"> </span>X)
+    retval &lt;-<span class="st"> </span><span class="kw">reduce</span>(retval, <span class="dt">op=</span><span class="st">&quot;sum&quot;</span>)
+  }
+  retval
+}</code></pre>
+<p>值得一提的是，從 LIBLINEAR 的實作中的小撇步： <code>d &lt;&lt;- sigma(x) * (1 - sigma(x))</code> 。這等講完 Hessian 後再解釋。</p>
+<h3 id="關於-的算法-2"><a href="#關於-的算法-2">關於 <img src="../timg/_nabla_2_26fc9f507ebe1b808449f8f0cd56c9a7.jpg" /> 的算法</a></h3>
+<p>Hessian 其實是個 <img src="../timg/p_times__3168a2f0bd25e0593fd8b61ec901c5af.jpg" /> 的矩陣，當資料量大，而且 feature 也大的時候，這個 Hessian 通常會拖累效能。而 LIBLINEAR 的 Trusted Region 的實作，並不需要直接算出 <img src="../timg/_nabla_2_2c4aeb2711d97003e66605c5f26281fd.jpg" /> , 而是以 <img src="../timg/_nabla_2_b3b44fe9479618568a50279e37b390d3.jpg" /> 取代。而且這裡的 <img src="../timg/w_f1290186a5d0b1ceab27f4e77c0c5d68.jpg" /> ，一定和前面呼叫 <img src="../timg/mpi_grad_290fd303ab3cb6433b938221466f324a.jpg" /> 的 <img src="../timg/w_f1290186a5d0b1ceab27f4e77c0c5d68.jpg" /> 一致。</p>
+<p>仔細看 <img src="../timg/_nabla_2_683590a0c6a1c3a77515ee29d578dbb9.jpg" /> 的算式：</p>
+<ul>
+<li><img src="../timg/_nabla_2_dc6c012bd0fcddc9f54e8ea08712a89b.jpg" /></li>
+<li><img src="../timg/D__ii_fr_e805ec74096e8806a937fa11f78c5a5c.jpg" /></li>
+<li><img src="../timg/X_left_b_e1a12bcf588f1ff52a43e8f4cf6cba81.jpg" title="fig:" /></li>
+</ul>
+<p>讀者有沒有注意到，唯一和 <img src="../timg/w_f1290186a5d0b1ceab27f4e77c0c5d68.jpg" /> 有關的就是 <img src="../timg/D__ii__44fc0c929fb5a83b5439317dfdf39379.jpg" /> ?由於 Trusted Region 的實作的特性，所以我們把 <img src="../timg/D__ii__44fc0c929fb5a83b5439317dfdf39379.jpg" /> 的計算移動到 <code>mpi_grad</code> 之中，也就是剛剛提到的： <code>d &lt;&lt;- sigma(x) * (1 - sigma(x))</code></p>
+<p>而這裡的拆解，就是慢慢把</p>
+<div class="figure">
+<img src="../timg/_left_X__473e73c6b2be3569d3246edc76d8bec4.jpg" />
+</div>
+<p>展開！</p>
+<p>最終我們會得到，每個電腦就只要計算 <img src="../timg/X_i_T_D__18c004e8a771369ebf46397984047ae8.jpg" /> ，最後再由 master 加總起來就可以了。</p>
+<p>所以就寫成：</p>
+<pre class="sourceCode r"><code class="sourceCode r">mpi_Hs &lt;-<span class="st"> </span>function(unused, w) {
+  if (<span class="kw">comm.rank</span>() ==<span class="st"> </span><span class="dv">0</span>) {
+    action_flag &lt;-<span class="st"> </span><span class="kw">bcast</span>(HS)
+    w &lt;-<span class="st"> </span><span class="kw">bcast</span>(w)
+    regularization &lt;-<span class="st"> </span>w
+    retval &lt;-<span class="st"> </span><span class="kw">reduce</span>(regularization, <span class="dt">op =</span> <span class="st">&quot;sum&quot;</span>)
+  } else {
+    w &lt;&lt;-<span class="st"> </span><span class="kw">bcast</span>(w)
+    retval &lt;-<span class="st"> </span><span class="kw">as.vector</span>(<span class="kw">t</span>(d *<span class="st"> </span>(X %*%<span class="st"> </span>w)) %*%<span class="st"> </span>X)
+    retval &lt;-<span class="st"> </span><span class="kw">reduce</span>(retval, <span class="dt">op=</span><span class="st">&quot;sum&quot;</span>)
+  }
+  retval
+}</code></pre>
+<p><img src="../timg/X_i_T_D__18c004e8a771369ebf46397984047ae8.jpg" /> 的計算就是 <code>t(d * (X %*% w)) %*% X</code> ，請讀者注意，這裡的 <code>w</code> 就是數學式中的 <img src="../timg/s_03c7c0ace395d80182db07ae2c30f034.jpg" /> 。</p>
+<h3 id="最佳化的流程"><a href="#最佳化的流程">最佳化的流程</a></h3>
+<p>基本上， Trusted Region 的部分，也就是算難的部分，筆者完全交給 LIBLINEAR 的核心去跑。也就是說，由這個核心決定什麼時候要算 <code>mpi_fun</code>、<code>mpi_grad</code> 或 <code>mpi_Hs</code>，而計算的參數 <code>w</code>，也一切由它說了算。</p>
+<p>所以整個流程就是：</p>
+<div class="figure">
+<img src="../img/optimization_flow.png" />
+</div>
+<p>而slaves就是只要等待 master 告知：</p>
+<ol style="list-style-type: decimal">
+<li>計算的動作，也就是<code>action_flag</code></li>
+<li>計算的參數，也就是<code>w &lt;- bcast(w)</code></li>
+</ol>
+<p>然後再由 <code>reduce</code> 把結果匯整後，由 master 回傳給核心。而 slaves 的回傳值完全不重要。</p>
+<p>計算的過程中，讀者應該會看到：</p>
+<pre><code>iter  1 act 6.290e+05 pre 5.622e+05 delta 2.101e+00 f 8.930e+05 |g| 6.073e+05 CG   1
+iter  2 act 6.752e+04 pre 5.666e+04 delta 2.101e+00 f 2.640e+05 |g| 1.312e+05 CG   1
+...</code></pre>
+<p>這就是告訴讀者， LIBLINEAR 的核心已經疊代了兩次，第一次的 <code>mpi_fun</code> 的值是 <img src="../timg/8_93_tim_a7eb7fa70cbe24f332a6d890f6df78e4.jpg" /> ， <code>mpi_grad</code> 的結果的向量長度是 <img src="../timg/6_073_ti_0044d1bad3a1ff122e9f39ff3c6f930a.jpg" /> ，而 Trusted Region 算 <code>mpi_Hs</code> 算了 1 次(CG 後面的數字)以後才找到下一個 <code>w</code> 。</p>
+<h3 id="結果"><a href="#結果">結果：</a></h3>
+<p>以下是筆者用 23 個 c1.medium 跑出來的結果：</p>
+<pre><code>[1] &quot;nrow(data): 1311826 (from 1987)&quot;
+NULL
+COMM.RANK = 0
+[1] &quot;Loading time: 6.10 secs&quot;
+COMM.RANK = 0
+  [1] &quot;SAN&quot; &quot;SFO&quot; &quot;BUR&quot; &quot;OAK&quot; &quot;LAX&quot; &quot;PHX&quot; &quot;SJC&quot; &quot;LAS&quot; &quot;SNA&quot; &quot;SMF&quot; &quot;ABQ&quot; &quot;MFR&quot;
+ [13] &quot;SCK&quot; &quot;MRY&quot; &quot;TUS&quot; &quot;EUG&quot; &quot;SEA&quot; &quot;RDM&quot; &quot;PDX&quot; &quot;RNO&quot; &quot;ONT&quot; &quot;CCR&quot; &quot;FAT&quot; &quot;LGB&quot;
+ [25] &quot;PSC&quot; &quot;YKM&quot; &quot;BLI&quot; &quot;GEG&quot; &quot;JFK&quot; &quot;STL&quot; &quot;HNL&quot; &quot;MIA&quot; &quot;SJU&quot; &quot;DEN&quot; &quot;CVG&quot; &quot;DCA&quot;
+ [37] &quot;DTW&quot; &quot;SYR&quot; &quot;LGA&quot; &quot;BOS&quot; &quot;PHL&quot; &quot;TPA&quot; &quot;MCO&quot; &quot;MKE&quot; &quot;IAD&quot; &quot;CMH&quot; &quot;ORD&quot; &quot;PIT&quot;
+ [49] &quot;EWR&quot; &quot;HOU&quot; &quot;SAT&quot; &quot;DAY&quot; &quot;IND&quot; &quot;FLL&quot; &quot;BNA&quot; &quot;CLE&quot; &quot;DFW&quot; &quot;BWI&quot; &quot;ORF&quot; &quot;COS&quot;
+ [61] &quot;MCI&quot; &quot;LIT&quot; &quot;TUL&quot; &quot;BDL&quot; &quot;SLC&quot; &quot;SDF&quot; &quot;IAH&quot; &quot;JAX&quot; &quot;PSP&quot; &quot;ANC&quot; &quot;MSY&quot; &quot;OMA&quot;
+ [73] &quot;RSW&quot; &quot;SRQ&quot; &quot;ICT&quot; &quot;ATL&quot; &quot;MDW&quot; &quot;AUS&quot; &quot;MSP&quot; &quot;PBI&quot; &quot;OKC&quot; &quot;MLI&quot; &quot;MSN&quot; &quot;CLT&quot;
+ [85] &quot;DSM&quot; &quot;RDU&quot; &quot;FSD&quot; &quot;PIA&quot; &quot;SGF&quot; &quot;LEX&quot; &quot;CMI&quot; &quot;CID&quot; &quot;SUX&quot; &quot;TOL&quot; &quot;LNK&quot; &quot;MDT&quot;
+ [97] &quot;ALO&quot; &quot;RST&quot; &quot;MEM&quot; &quot;OGG&quot; &quot;FAI&quot; &quot;KOA&quot; &quot;ROC&quot; &quot;MBS&quot; &quot;LIH&quot; &quot;SBA&quot; &quot;ALB&quot; &quot;GSO&quot;
+[109] &quot;GRR&quot; &quot;BIL&quot; &quot;BHM&quot; &quot;CAE&quot; &quot;MHT&quot; &quot;ELP&quot; &quot;TYS&quot; &quot;JAN&quot; &quot;BFL&quot; &quot;HSV&quot; &quot;SAV&quot; &quot;BGR&quot;
+[121] &quot;PWM&quot; &quot;ABE&quot; &quot;BOI&quot; &quot;CAK&quot; &quot;GTF&quot; &quot;BUF&quot; &quot;CPR&quot; &quot;BTV&quot; &quot;ISP&quot; &quot;RIC&quot; &quot;CHS&quot; &quot;PVD&quot;
+[133] &quot;RAP&quot; &quot;CRW&quot; &quot;FAR&quot; &quot;HPN&quot; &quot;FOE&quot; &quot;ILM&quot; &quot;RDD&quot; &quot;LMT&quot; &quot;ACV&quot; &quot;ILG&quot; &quot;DAL&quot; &quot;LBB&quot;
+[145] &quot;AMA&quot; &quot;CRP&quot; &quot;HRL&quot; &quot;MAF&quot; &quot;TLH&quot; &quot;GSP&quot; &quot;PNS&quot; &quot;MOB&quot; &quot;AVP&quot; &quot;GNV&quot; &quot;STT&quot; &quot;STX&quot;
+[157] &quot;DAB&quot; &quot;MLB&quot; &quot;DRO&quot; &quot;GJT&quot; &quot;PUB&quot; &quot;GCN&quot; &quot;FLG&quot; &quot;YUM&quot; &quot;GRB&quot; &quot;AZO&quot; &quot;ERI&quot; &quot;FWA&quot;
+[169] &quot;BIS&quot; &quot;MOT&quot; &quot;GFK&quot; &quot;VPS&quot; &quot;BZN&quot; &quot;DLH&quot; &quot;LSE&quot; &quot;EAU&quot; &quot;ATW&quot; &quot;SBN&quot; &quot;LAN&quot; &quot;MSO&quot;
+[181] &quot;MGM&quot; &quot;BTR&quot; &quot;SHV&quot; &quot;CHA&quot; &quot;GPT&quot; &quot;PFN&quot; &quot;CWA&quot; &quot;ROA&quot; &quot;FAY&quot; &quot;AVL&quot; &quot;OAJ&quot; &quot;HTS&quot;
+[193] &quot;TRI&quot; &quot;LYH&quot; &quot;MYR&quot; &quot;FNT&quot; &quot;AGS&quot; &quot;ORH&quot; &quot;CHO&quot; &quot;ISO&quot; &quot;EVV&quot; &quot;UCA&quot; &quot;APF&quot; &quot;EYW&quot;
+[205] &quot;BGM&quot; &quot;ITH&quot; &quot;ELM&quot; &quot;LFT&quot; &quot;GUM&quot; &quot;YAP&quot; &quot;ROR&quot; &quot;SPN&quot; &quot;MFE&quot; &quot;MLU&quot; &quot;CSG&quot; &quot;FCA&quot;
+[217] &quot;HLN&quot; &quot;IDA&quot; &quot;JAC&quot; &quot;JNU&quot; &quot;BTM&quot; &quot;PIE&quot; &quot;TVL&quot; &quot;PHF&quot; &quot;BET&quot; &quot;OME&quot; &quot;OTZ&quot; &quot;SCC&quot;
+[229] &quot;KTN&quot; &quot;CDV&quot; &quot;YAK&quot; &quot;SIT&quot; &quot;PSG&quot; &quot;WRG&quot; &quot;GUC&quot; &quot;HDN&quot; &quot;PIR&quot;
+COMM.RANK = 0
+[1] &quot;encoding training data...&quot;
+COMM.RANK = 0
+[1] &quot;Encoding time: 1.04 secs&quot;
+COMM.RANK = 0
+[1] &quot;constructing model matrix...&quot;
+COMM.RANK = 0
+[1] &quot;Encoded data needs about 0.100643 GB&quot;
+COMM.RANK = 0
+[1] &quot;Constructing time: 7.52 secs&quot;
+Loading required package: HsTrust
+Loading required package: Rcpp
+iter  1 act 6.290e+05 pre 5.622e+05 delta 2.101e+00 f 8.930e+05 |g| 6.073e+05 CG   1
+iter  2 act 6.752e+04 pre 5.666e+04 delta 2.101e+00 f 2.640e+05 |g| 1.312e+05 CG   1
+iter  3 act 1.004e+04 pre 8.876e+03 delta 2.101e+00 f 1.965e+05 |g| 3.630e+04 CG   1
+cg reaches trust region boundary
+iter  4 act 3.455e+03 pre 3.842e+03 delta 2.101e+00 f 1.865e+05 |g| 7.325e+03 CG   2
+cg reaches trust region boundary
+iter  5 act 1.077e+03 pre 1.035e+03 delta 2.240e+00 f 1.830e+05 |g| 3.475e+03 CG   4
+cg reaches trust region boundary
+iter  6 act 3.777e+02 pre 3.796e+02 delta 2.454e+00 f 1.820e+05 |g| 9.663e+02 CG   4
+[1] &quot;Training time: 47.22 secs&quot;
+[1] &quot;Total time: 61.88&quot;</code></pre>
+<p>全部只要一分鐘，就可以算完約 120947440 筆資料喔。</p>
+<h3 id="結語"><a href="#結語">結語</a></h3>
+<p>說實話，這裡 Demo 的數字並沒有很快。只要電腦夠好，在一台記憶體充足的電腦上，使用正確的工具和演算法，應該有機會可以更快地完成運算。但是這整套基於雲端運算的 MPI 有以下的特性：</p>
+<ul>
+<li>以記憶體為主。和 Hadoop 相比，只要記憶體足夠，MPI為基礎的平行運算絕對在效能上可以大大勝過Hadoop這類以硬碟為主的工具和方法。</li>
+<li>便宜，平民也負擔得起。又以 1TB 的資料為例，要搞到一台記憶體這麼大的電腦可能要數萬，甚至數十萬美元以上，相比之下租40台32G的AWS Instance可能一小時不到40美元。</li>
+<li>和MPI相比，Hadoop 昂貴又複雜。MPI 適合規模還不夠大的企業和學界，解決一些相對單純的問題。如果事情可以用簡單的工具解決，何必用複雜的工具呢？</li>
+<li>以 R 結合 C ，可以兼顧開發速度和執行效能。 80% 的程式碼用 R 實作，而 20% 的瓶頸可以用 C 來實作。</li>
+<li>不需購買機器。所以對於學界等許多一次性的需求來說滿恰當的。對於企業來說，如果要長時間且持續不斷的做運算，當然自己買機器比較划算。但是在沒有真正算出來之前，怎麼能確定大數據分析後的結果真的值得那些機器的成本價格呢？雲端運算環境給大家一個機會，在花高價買機器之前可以便宜的先測試。</li>
+<li>好擴充。只要能複製 AMI ，就能輕鬆擴充運算資源。目前筆者是有嘗試運用到 80 個 instance 跑運算，整體 Scaling 的效果仍然是不錯。只要錢夠，甚至可以直接把環境複製在更高性能的機器以及網路環境，用錢來換取時間。</li>
+</ul>
+<p>處理不是非常非常大的數據，並不是只有 Hadoop ， MPI + R + AWS 也是一種選項。</p>
+<h3 id="作者"><a href="#作者">作者</a></h3>
+<h4 id="wush-wu-wush978gmail.com"><a href="#wush-wu-wush978gmail.com">Wush Wu (<script type="text/javascript">
+<!--
+h='&#x67;&#x6d;&#x61;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;';a='&#64;';n='&#x77;&#x75;&#x73;&#104;&#x39;&#x37;&#56;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'">'+e+'<\/'+'a'+'>');
+// -->
+</script><noscript>&#x77;&#x75;&#x73;&#104;&#x39;&#x37;&#56;&#32;&#x61;&#116;&#32;&#x67;&#x6d;&#x61;&#x69;&#108;&#32;&#100;&#x6f;&#116;&#32;&#x63;&#x6f;&#x6d;</noscript>)</a></h4>
+<ul>
+<li><a href="https://www.facebook.com/Tw.R.User">Taiwan R User Group</a> Organizer</li>
+<li>R 相關著作：
+<ul>
+<li><a href="http://cran.r-project.org/web/packages/RMessenger/index.html">RMessenger</a>的作者</li>
+<li><a href="https://bitbucket.org/wush_iis/rsus">RSUS</a>，這是<a href="http://www.cs.sfu.ca/~jpei/publications/MISQ_ICDE12.pdf">On Shortest Unique Substring Query</a>的實作</li>
+</ul></li>
+<li>研究領域：Large Scale Learning，<a href="http://www.cs.sfu.ca/~jpei/publications/MISQ_ICDE12.pdf">Text Mining</a>和<a href="http://www.cs.sfu.ca/~jpei/publications/Shortest%20Unique%20Substring%20Queries%20ICDE13.pdf">Uncertain Time Series</a></li>
+</ul>
+</div>
+<div id="footer">
+<a href="https://www.facebook.com/groups/programmerMagazine/">程式人雜誌</a> ，採用 <a href="http://creativecommons.org/licenses/by-sa/3.0/tw/ ">創作共用：姓名標示、相同方式分享</a> 授權，歡迎加入 <a href="https://www.facebook.com/groups/programmerMagazine/">雜誌社團</a>
+</div>
+</body>
+</html>
